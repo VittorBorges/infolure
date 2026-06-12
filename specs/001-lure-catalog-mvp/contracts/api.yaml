@@ -1,0 +1,459 @@
+openapi: "3.1.0"
+info:
+  title: Lure Platform API — Catalog
+  version: "1.0.0"
+
+paths:
+
+  /v1/lures:
+    get:
+      operationId: listLures
+      summary: List and search lures (Typesense-backed)
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+          description: Full-text search query. Empty = list all.
+        - name: lure_type
+          in: query
+          schema: { type: string }
+          example: jig
+        - name: water_type
+          in: query
+          schema: { type: string, enum: [freshwater, saltwater, both] }
+        - name: species
+          in: query
+          schema: { type: string }
+          description: Species slug. Multiple values comma-separated.
+        - name: brand
+          in: query
+          schema: { type: string }
+          description: Brand slug.
+        - name: weight_min
+          in: query
+          schema: { type: number }
+        - name: weight_max
+          in: query
+          schema: { type: number }
+        - name: depth_min
+          in: query
+          schema: { type: number }
+        - name: depth_max
+          in: query
+          schema: { type: number }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [popularity, price_asc, price_desc, newest]
+          default: popularity
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20, maximum: 50 }
+        - name: locale
+          in: query
+          schema: { type: string, enum: [pt, en, es], default: pt }
+      responses:
+        "200":
+          description: Paginated lure list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LureCard" }
+                  meta:
+                    type: object
+                    properties:
+                      total:    { type: integer }
+                      page:     { type: integer }
+                      per_page: { type: integer }
+                      facets:   { $ref: "#/components/schemas/CatalogFacets" }
+
+  /v1/lures/suggest:
+    get:
+      operationId: suggestLures
+      summary: Autocomplete suggestions (instant search)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+        - name: locale
+          in: query
+          schema: { type: string, enum: [pt, en, es], default: pt }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    maxItems: 8
+                    items:
+                      type: object
+                      properties:
+                        slug:  { type: string }
+                        name:  { type: string }
+                        brand: { type: string }
+                        type:  { type: string }
+
+  /v1/lures/{slug}:
+    get:
+      operationId: getLure
+      summary: Lure detail page data
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: locale
+          in: query
+          schema: { type: string, enum: [pt, en, es], default: pt }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LureDetail" }
+        "404":
+          description: Lure not found or not published
+
+  /v1/lures/{slug}/reviews:
+    get:
+      operationId: listReviews
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [recent, helpful], default: recent }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Review" }
+                  aggregate:
+                    type: object
+                    properties:
+                      avg_rating:    { type: number }
+                      total_reviews: { type: integer }
+                      distribution:
+                        type: object
+                        properties:
+                          "1": { type: integer }
+                          "2": { type: integer }
+                          "3": { type: integer }
+                          "4": { type: integer }
+                          "5": { type: integer }
+    post:
+      operationId: createReview
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                body:   { type: string, maxLength: 1000 }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Review" }
+        "409":
+          description: User already reviewed this lure
+
+  /v1/me/favorites:
+    get:
+      operationId: listFavorites
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LureCard" }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+
+  /v1/me/favorites/{lureId}:
+    post:
+      operationId: addFavorite
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: lureId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Added }
+        "404": { description: Lure not found }
+    delete:
+      operationId: removeFavorite
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: lureId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Removed }
+
+  /v1/me/inventory:
+    get:
+      operationId: listInventory
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/InventoryEntry" }
+                  total_unique_lures: { type: integer }
+    post:
+      operationId: addToInventory
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lure_id]
+              properties:
+                lure_id:   { type: string, format: uuid }
+                color_id:  { type: string, format: uuid }
+                quantity:  { type: integer, minimum: 1, maximum: 99, default: 1 }
+                condition: { type: string, enum: [new, good, used] }
+                notes:     { type: string, maxLength: 200 }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryEntry" }
+        "409":
+          description: Entry already exists for this lure + color combination
+
+  /v1/me/inventory/{entryId}:
+    patch:
+      operationId: updateInventoryEntry
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:  { type: integer, minimum: 1, maximum: 99 }
+                condition: { type: string, enum: [new, good, used, lost] }
+                notes:     { type: string, maxLength: 200 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryEntry" }
+        "403": { description: Not owner }
+    delete:
+      operationId: deleteInventoryEntry
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Deleted }
+        "403": { description: Not owner }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    LureCard:
+      type: object
+      properties:
+        id:               { type: string, format: uuid }
+        slug:             { type: string }
+        name:             { type: string }
+        brand:            { type: string }
+        lure_type:        { type: string }
+        water_type:       { type: string }
+        weight_g:         { type: number }
+        primary_image_url:{ type: string }
+        primary_color_hex:{ type: string }
+        target_species:
+          type: array
+          items: { type: string }
+        price_avg_eur:    { type: number }
+        favorites_count:  { type: integer }
+        is_favorited:     { type: boolean, description: "null if unauthenticated" }
+
+    LureDetail:
+      allOf:
+        - $ref: "#/components/schemas/LureCard"
+        - type: object
+          properties:
+            description:     { type: string }
+            length_mm:       { type: number }
+            depth_min_m:     { type: number }
+            depth_max_m:     { type: number }
+            hook_size:       { type: string }
+            hook_type:       { type: string }
+            hook_count:      { type: integer }
+            material:        { type: string }
+            attributes:      { type: object }
+            colors:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:            { type: string, format: uuid }
+                  name:          { type: string }
+                  hex_primary:   { type: string }
+                  hex_secondary: { type: string }
+                  pattern:       { type: string }
+            images:
+              type: array
+              items:
+                type: object
+                properties:
+                  url:        { type: string }
+                  color_id:   { type: string, format: uuid }
+                  is_primary: { type: boolean }
+            target_species_detail:
+              type: array
+              items:
+                type: object
+                properties:
+                  slug:        { type: string }
+                  common_name: { type: string }
+                  confidence:  { type: string, enum: [primary, secondary] }
+            pricing:
+              type: object
+              properties:
+                avg_eur:  { type: number }
+                min_eur:  { type: number }
+                max_eur:  { type: number }
+                updated_at: { type: string, format: date-time }
+                retailers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      retailer:   { type: string }
+                      url:        { type: string }
+                      price_eur:  { type: number }
+                      in_stock:   { type: boolean }
+            avg_rating:     { type: number }
+            reviews_count:  { type: integer }
+            is_in_inventory:{ type: boolean, description: "null if unauthenticated" }
+
+    Review:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        rating:        { type: integer }
+        body:          { type: string }
+        helpful_count: { type: integer }
+        is_helpful:    { type: boolean, description: "null if unauthenticated" }
+        created_at:    { type: string, format: date-time }
+        author:
+          type: object
+          properties:
+            username:   { type: string }
+            avatar_url: { type: string }
+
+    InventoryEntry:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        lure:      { $ref: "#/components/schemas/LureCard" }
+        color:
+          type: object
+          properties:
+            id:   { type: string, format: uuid }
+            name: { type: string }
+            hex_primary: { type: string }
+        quantity:  { type: integer }
+        condition: { type: string, enum: [new, good, used, lost] }
+        notes:     { type: string }
+        added_at:  { type: string, format: date-time }
+
+    CatalogFacets:
+      type: object
+      properties:
+        lure_types:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              count: { type: integer }
+        brands:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              count: { type: integer }
+        water_types:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              count: { type: integer }
+        species:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              count: { type: integer }
