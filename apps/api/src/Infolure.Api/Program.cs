@@ -40,6 +40,7 @@ builder.Services.AddScoped<Infolure.Api.Features.Auth.AuthSyncService>();
 builder.Services.AddScoped<Infolure.Api.Features.Auth.UserResolver>();
 builder.Services.AddScoped<Infolure.Api.Features.Favorites.FavoritesService>();
 builder.Services.AddScoped<Infolure.Api.Features.Inventory.InventoryService>();
+builder.Services.AddScoped<Infolure.Api.Features.Reviews.ReviewsService>();
 
 // Controllers (vertical slices nas fases de user story) + OpenAPI (T016)
 builder.Services.AddControllers().AddJsonOptions(o =>

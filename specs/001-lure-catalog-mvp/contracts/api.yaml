@@ -252,6 +252,54 @@ paths:
         "409":
           description: User already reviewed this lure
 
+  /v1/lures/{slug}/reviews/{reviewId}:
+    patch:
+      operationId: updateReview
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: reviewId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                body:   { type: string, maxLength: 1000 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Review" }
+        "403": { description: Not the author }
+    delete:
+      operationId: deleteReview
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: reviewId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "403": { description: Not the author }
+
+  /v1/reviews/{reviewId}/helpful:
+    post:
+      operationId: toggleReviewHelpful
+      summary: Toggle "helpful" vote on a review (one per user)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: reviewId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  helpful_count: { type: integer }
+                  is_helpful:    { type: boolean }
+
   /v1/me/favorites:
     get:
       operationId: listFavorites

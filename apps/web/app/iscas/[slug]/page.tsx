@@ -7,6 +7,7 @@ import { Gallery } from '../../../components/detail/Gallery';
 import { PricingSection } from '../../../components/detail/PricingSection';
 import { FavoriteButton } from '../../../components/catalog/FavoriteButton';
 import { AddToInventory } from '../../../components/inventory/AddToInventoryModal';
+import { Reviews } from '../../../components/detail/Reviews';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,6 +116,8 @@ export default async function LureDetailPage({
       </div>
 
       <PricingSection pricing={lure.pricing} />
+
+      <Reviews slug={lure.slug} />
     </article>
   );
 }

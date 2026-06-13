@@ -203,15 +203,15 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Independent Test**: rating obrigatório, texto ≤ 1000 chars; uma review por user/isca (edit/delete); ordenadas por recente; "útil" 1 voto/user.
 
 ### Tests
-- [ ] T066 [P] [US8] Testes de contrato reviews (list/create) em `apps/api/tests/Infolure.IntegrationTests/Reviews/ReviewsContractTests.cs`
-- [ ] T067 [P] [US8] Teste de integração regra "uma review por user/isca" + agregado em `apps/api/tests/Infolure.UnitTests/Reviews/ReviewRulesTests.cs`
+- [X] T066 [P] [US8] Testes de contrato reviews (list/create) em `apps/api/tests/Infolure.IntegrationTests/Reviews/ReviewsContractTests.cs`
+- [X] T067 [P] [US8] Teste de integração regra "uma review por user/isca" + agregado em `apps/api/tests/Infolure.UnitTests/Reviews/ReviewRulesTests.cs`
 
 ### Implementation
-- [ ] T068 [US8] Adicionar `PATCH`/`DELETE /v1/lures/{slug}/reviews/{reviewId}` e `POST /v1/reviews/{reviewId}/helpful` a `contracts/api.yaml`
-- [ ] T069 [US8] Serviço de reviews (uma por user/isca, agregado avg+distribuição, voto útil) em `apps/api/src/Infolure.Api/Features/Reviews/ReviewsService.cs`
-- [ ] T070 [US8] Endpoints reviews (list/create/edit/delete/helpful) em `apps/api/src/Infolure.Api/Features/Reviews/ReviewsEndpoints.cs`
-- [ ] T071 [P] [US8] Lista + formulário de review na página de detalhe em `apps/web/components/detail/Reviews.tsx`
-- [ ] T072 [P] [US8] Rating agregado (média + distribuição) no detalhe em `apps/web/components/detail/RatingSummary.tsx`
+- [X] T068 [US8] Adicionar `PATCH`/`DELETE /v1/lures/{slug}/reviews/{reviewId}` e `POST /v1/reviews/{reviewId}/helpful` a `contracts/api.yaml`
+- [X] T069 [US8] Serviço de reviews (uma por user/isca, agregado avg+distribuição, voto útil) em `apps/api/src/Infolure.Api/Features/Reviews/ReviewsService.cs`
+- [X] T070 [US8] Endpoints reviews (list/create/edit/delete/helpful) em `apps/api/src/Infolure.Api/Features/Reviews/ReviewsEndpoints.cs`
+- [X] T071 [P] [US8] Lista + formulário de review na página de detalhe em `apps/web/components/detail/Reviews.tsx`
+- [X] T072 [P] [US8] Rating agregado (média + distribuição) no detalhe em `apps/web/components/detail/RatingSummary.tsx`
 
 **Checkpoint**: avaliações funcionais.
 
