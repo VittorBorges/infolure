@@ -5,6 +5,7 @@ import { fetchLureDetail, type LureDetail } from '../../../lib/catalog';
 import { ApiError } from '../../../lib/api';
 import { Gallery } from '../../../components/detail/Gallery';
 import { PricingSection } from '../../../components/detail/PricingSection';
+import { FavoriteButton } from '../../../components/catalog/FavoriteButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +81,10 @@ export default async function LureDetailPage({
         <Gallery lure={lure} />
 
         <div>
-          <h1 style={{ marginTop: 0 }}>{lure.name}</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '1rem' }}>
+            <h1 style={{ marginTop: 0 }}>{lure.name}</h1>
+            <FavoriteButton lureId={lure.id} initialFavorited={lure.is_favorited ?? false} initialCount={lure.favorites_count} />
+          </div>
           <p style={{ color: '#666' }}>{lure.brand} · {lure.lure_type}</p>
           {lure.description && <p>{lure.description}</p>}
 

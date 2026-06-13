@@ -162,15 +162,15 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Independent Test**: toggle otimista no card/detalhe; anônimo redireciona p/ login com return URL; "Meus Favoritos" lista com mesmo filtro/sort do catálogo; contagem global no card.
 
 ### Tests
-- [ ] T053 [P] [US5] Testes de contrato favoritos (list/add/remove) em `apps/api/tests/Infolure.IntegrationTests/Favorites/FavoritesContractTests.cs`
+- [X] T053 [P] [US5] Testes de contrato favoritos (list/add/remove) em `apps/api/tests/Infolure.IntegrationTests/Favorites/FavoritesContractTests.cs`
 - [ ] T054 [P] [US5] Teste E2E favoritar/desfavoritar em `apps/web/tests/e2e/favorites.spec.ts`
 
 ### Implementation
-- [ ] T055 [US5] Serviço de favoritos (+ recálculo de `popularity_score`) em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesService.cs`
-- [ ] T056 [US5] Endpoints `GET /v1/me/favorites`, `POST`/`DELETE /v1/me/favorites/{lureId}` em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesEndpoints.cs`
-- [ ] T057 [US5] Reindex Typesense ao mudar favorito (popularity) em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesService.cs`
-- [ ] T058 [P] [US5] Botão de favorito otimista (auth-gated, redirect com return URL) em `apps/web/components/catalog/FavoriteButton.tsx`
-- [ ] T059 [P] [US5] Página `/conta/favoritos` em `apps/web/app/conta/favoritos/page.tsx`
+- [X] T055 [US5] Serviço de favoritos (+ recálculo de `popularity_score`) em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesService.cs`
+- [X] T056 [US5] Endpoints `GET /v1/me/favorites`, `POST`/`DELETE /v1/me/favorites/{lureId}` em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesEndpoints.cs`
+- [X] T057 [US5] Reindex Typesense ao mudar favorito (popularity) em `apps/api/src/Infolure.Api/Features/Favorites/FavoritesService.cs`
+- [X] T058 [P] [US5] Botão de favorito otimista (auth-gated, redirect com return URL) em `apps/web/components/catalog/FavoriteButton.tsx`
+- [X] T059 [P] [US5] Página `/conta/favoritos` em `apps/web/app/conta/favoritos/page.tsx`
 
 **Checkpoint**: favoritos funcionais.
 
