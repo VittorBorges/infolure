@@ -1,0 +1,10 @@
+{
+  "app.title": "Infolure — Catálogo de Señuelos",
+  "nav.catalog": "Catálogo",
+  "search.placeholder": "Buscar señuelos, marcas o modelos…",
+  "state.loading": "Cargando…",
+  "state.empty.title": "Sin resultados",
+  "state.empty.cta": "Borrar filtros",
+  "state.error.title": "Algo salió mal",
+  "state.error.retry": "Reintentar"
+}

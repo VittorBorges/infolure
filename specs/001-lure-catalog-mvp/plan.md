@@ -1,194 +1,201 @@
-# Implementation Plan — Feature 001: Lure Catalog MVP
+# Implementation Plan: Lure Catalog MVP
 
-**Spec:** `specs/001-lure-catalog-mvp/spec.md`
-**Constitution compliance:** verified against Articles I–IX
-**Last updated:** 2026-06-10
+**Branch**: `001-lure-catalog-mvp` | **Date**: 2026-06-13 | **Spec**: [spec.md](spec.md)
 
----
+**Input**: Feature specification from `specs/001-lure-catalog-mvp/spec.md`
 
-## Pre-Implementation Gates
+> **Re-plan note (2026-06-13)**: este plano foi reescrito para a stack **.NET (backend) +
+> Next.js (frontend)** e realinhado à constituição vigente (`/.specify/memory/constitution.md`,
+> v1.1.x — 5 princípios). A versão anterior assumia Node.js/Fastify e uma constituição de
+> "Articles I–IX" que não corresponde ao arquivo atual. `data-model.md` e `contracts/api.yaml`
+> são agnósticos de stack e foram preservados.
 
-### Simplicity Gate (Article IX)
-- [x] ≤ 3 top-level projects? → Yes: `api` (backend), `web` (frontend), `infra` (IaC).
-- [x] No future-proofing beyond what spec requires? → Schema has forward-compat columns
-  (`lat/lng`, `deleted_at`) but no code paths for v2 features.
+## Summary
 
-### Search Gate (Article V)
-- [x] No SQL `LIKE` for full-text? → Typesense for all search and autocomplete.
-- [x] Sync strategy defined? → Write-through from API on catalog mutations.
+Catálogo de iscas de pesca para o mercado ibérico (PT/ES), com descoberta por busca e filtros,
+fichas técnicas detalhadas, favoritos, inventário pessoal ("iscas que possuo"), avaliações e
+preços curados de retalhistas. PT-PT é o idioma primário; EN e ES secundários.
 
-### Auth Gate (Article IV)
-- [x] Using standard OIDC? → Yes, via Supabase Auth (wraps OIDC for Google + Microsoft MSA).
-- [x] No custom JWT? → Supabase issues JWTs; API validates using Supabase's JWKS endpoint.
+**Abordagem técnica**: API REST em **ASP.NET Core (.NET 10 LTS)** sobre **PostgreSQL** (via
+EF Core/Npgsql), com **Typesense** para busca/autocomplete facetado, **Supabase Auth** como
+broker OIDC (Google + Microsoft MSA + email/senha + linking multi-provedor), **Redis** para
+rate limiting e cache, e **Azure Blob + Front Door** para imagens. Frontend em **Next.js 15
+(App Router, SSR)** para garantir indexabilidade SEO das páginas de catálogo e detalhe. O
+contrato entre frontend e backend é um documento **OpenAPI** versionado, do qual os tipos do
+frontend são derivados.
 
----
+## Technical Context
 
-## Tech Stack Decisions
+**Language/Version**:
+- Backend: C# 13 / **.NET 10 (LTS)** — resolve o `TODO(STACK_DECISION)` da constituição.
+- Frontend: TypeScript 5.x / **Next.js 15** (React 19, App Router).
 
-| Layer | Choice | Rationale |
-|---|---|---|
-| API | **Node.js + TypeScript** (Fastify) | Type safety, fast startup, good Supabase SDK support. |
-| Web | **Next.js 14** (App Router, SSR) | SEO-critical (catalog pages must be indexable). SSR for detail pages, client components for interactive filters. |
-| Database | **Azure Database for PostgreSQL Flexible Server** | Managed, RGPD-compliant region (West Europe). |
-| Search | **Typesense Cloud** | Managed, no ops, excellent faceted search. Fallback to single-node on Azure Container Apps if cost is a constraint. |
-| Auth | **Supabase Auth** | Handles Google + Microsoft MSA OIDC, email/password, refresh tokens, and multi-provider linking out of the box. |
-| Storage | **Azure Blob Storage** | For lure images. CDN via Azure Front Door. (v2: catch photos.) |
-| Cache | **Azure Cache for Redis** | Session store, rate limiting counters, autocomplete cache. |
-| IaC | **Bicep** | Azure-native, no Terraform state management overhead for a small team. |
-| CI/CD | **GitHub Actions** | Standard for the repo. Separate pipelines per layer. |
+**Primary Dependencies**:
+- Backend: ASP.NET Core (Web API, controllers), **Entity Framework Core + Npgsql**, **Serilog**
+  (logging estruturado), **StackExchange.Redis**, cliente **Typesense** (.NET), **Azure SDK**
+  (Blob Storage), validação via **FluentValidation**, OpenAPI via **Swashbuckle/Microsoft.AspNetCore.OpenApi**.
+- Frontend: Next.js 15, React 19, **openapi-typescript** (tipos derivados do contrato),
+  `@supabase/ssr` (sessão server-side), TanStack Query (estado de servidor/otimismo).
 
----
+**Storage**:
+- **Azure Database for PostgreSQL Flexible Server** (fonte de verdade) — região West Europe (RGPD).
+- **Azure Blob Storage** (imagens de iscas) + Azure Front Door (CDN).
+- **Azure Cache for Redis** (rate limiting, sessões, cache de autocomplete).
+- **Typesense Cloud** (índice de busca facetada — sincronizado write-through a partir da API).
 
-## Architecture Overview
+**Testing**:
+- Backend: **xUnit** (unidade) + **WebApplicationFactory** + **Testcontainers** (integração com
+  Postgres real) para fluxos de API.
+- Frontend: **Vitest** + React Testing Library (componentes/hooks).
+- Cruzando a fronteira (Princípio IV): **Playwright** (E2E) cobrindo caminho feliz + erros principais.
 
+**Target Platform**: Azure West Europe. API em **Azure Container Apps** (ou App Service); Next.js em
+Azure (Container Apps/Static Web Apps) ou Vercel. Decisão de hosting do frontend em `research.md`.
+
+**Project Type**: Aplicação web (frontend + backend separados).
+
+**Performance Goals** (da spec, NFR):
+- Listagem de catálogo: p95 < 200ms (Typesense, com filtro de locale).
+- Página de detalhe: LCP < 2.5s em 4G móvel (SSR).
+- Autocomplete: primeira sugestão < 150ms após a tecla.
+
+**Constraints**:
+- HTTPS + HSTS; OAuth state validado (anti-CSRF).
+- Rate limiting: 100 req/min por IP (não autenticado), 300 req/min por utilizador (autenticado).
+- Sem PII em logs além do ID de utilizador com hash (Princípio II + NFR segurança).
+- WCAG 2.1 AA em páginas públicas; UI de filtro/busca navegável por teclado (Princípio V).
+- Residência de dados na UE (RGPD).
+
+**Scale/Scope**: ≥ 500 iscas, ≥ 50 marcas, ≥ 20 espécies no lançamento; ~25 endpoints de API;
+~10 ecrãs; 3 locales (PT-PT 100%, EN 100%, ES 80% no lançamento).
+
+**NEEDS CLARIFICATION** (não bloqueantes — ver `research.md` para recomendação):
+- US-01: paginação vs. infinite scroll (preferência de UX).
+- Hosting do frontend: Azure vs. Vercel.
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+Gates derivados de `/.specify/memory/constitution.md` (v1.1.x — 5 princípios).
+
+### Gate I — Simplicidade Primeiro (YAGNI) — NON-NEGOTIABLE
+- [x] ≤ 3 projetos top-level? → **Sim**: `apps/api` (backend), `apps/web` (frontend), `infra` (Bicep).
+- [x] Sem camadas prematuras? → API começa como **projeto único** (`Infolure.Api`) com organização
+  por *vertical slices* (Features/Catalog, Features/Auth, …). Split em Domain/Infrastructure só se
+  e quando justificar (registrado em Complexity Tracking).
+- [x] Sem future-proofing além do spec? → Colunas forward-compat (`lat/lng`, `deleted_at`,
+  `lure_price_history`) existem no schema mas **sem code paths** para features v2.
+
+### Gate II — Observabilidade por Padrão — NON-NEGOTIABLE
+- [x] Logging estruturado? → **Serilog** (JSON), com middleware de **correlation id** por requisição.
+- [x] Toda fronteira de rede logada (início/fim/resultado + latência)? → Requisições HTTP de entrada,
+  e chamadas a Postgres, Typesense, Redis, Blob e Supabase logadas com latência.
+- [x] Erros com contexto, sem segredos/PII? → ID de utilizador com hash; sem email/nome em logs.
+
+### Gate III — Contratos Explícitos (Frontend ↔ Backend)
+- [x] Contrato versionado antes do consumo? → **OpenAPI** (`contracts/api.yaml`) é a fonte de verdade;
+  o backend ASP.NET Core o gera/valida, e os tipos do Next.js são **derivados via openapi-typescript**.
+- [x] Breaking changes seguem SemVer + migração? → API versionada em `/v1`; mudanças incompatíveis → `/v2`.
+
+### Gate IV — Qualidade Testável
+- [x] Lógica de negócio testada? → xUnit em regras (sync de popularidade, validações, dedupe de review).
+- [x] Fluxos frontend↔backend com integração/E2E? → WebApplicationFactory + Testcontainers (API),
+  Playwright (E2E) cobrindo caminho feliz + erros principais por user story.
+
+### Gate V — Experiência do Utilizador Consistente
+- [x] Estados de loading/empty/error explícitos? → Já exigidos pela spec (US-01 empty state,
+  US-02 no-results); aplicados a cada ecrã com I/O.
+- [x] Erros compreensíveis (sem stack traces) + acessibilidade? → WCAG 2.1 AA, navegação por teclado.
+
+**Resultado**: todos os gates passam. Itens de complexidade externa justificados abaixo.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/001-lure-catalog-mvp/
+├── plan.md              # Este arquivo
+├── research.md          # Fase 0 — decisões de stack .NET/Next.js
+├── data-model.md        # DDL PostgreSQL (preservado — agnóstico de stack)
+├── quickstart.md        # Fase 1 — guia de validação ponta-a-ponta
+├── contracts/
+│   └── api.yaml         # OpenAPI 3.1 (preservado — contrato Princípio III)
+└── tasks.md             # Fase 2 (gerado por /speckit-tasks — STALE, regenerar)
 ```
-Browser / Mobile Web
-       │
-       ▼
-  Next.js (SSR)  ◄──── Azure Front Door (CDN + WAF)
-       │
-       ▼
-  Fastify API  ──────► Typesense Cloud  (catalog search)
-       │
-       ├──────────────► Azure PostgreSQL  (source of truth)
-       │
-       ├──────────────► Supabase Auth     (identity + sessions)
-       │
-       └──────────────► Azure Redis       (rate limits, cache)
+
+### Source Code (repository root)
+
+```text
+apps/
+├── api/                              # Backend ASP.NET Core (.NET 10 LTS)
+│   ├── src/
+│   │   └── Infolure.Api/             # Host único: endpoints, middleware, DI
+│   │       ├── Features/             # Vertical slices
+│   │       │   ├── Catalog/          # lures, species, brands, suggest
+│   │       │   ├── Auth/             # sync de utilizador, validação de JWT Supabase
+│   │       │   ├── Favorites/
+│   │       │   ├── Inventory/
+│   │       │   └── Reviews/
+│   │       ├── Infrastructure/       # EF Core DbContext, Typesense, Redis, Blob clients
+│   │       ├── Observability/        # Serilog config + correlation-id middleware
+│   │       └── Program.cs
+│   └── tests/
+│       ├── Infolure.UnitTests/       # xUnit
+│       └── Infolure.IntegrationTests/# WebApplicationFactory + Testcontainers
+├── web/                              # Frontend Next.js 15 (App Router, TS)
+│   ├── app/                          # rotas (SSR catalog/detail, client filters)
+│   ├── components/
+│   ├── lib/                          # api client (tipos gerados via openapi-typescript)
+│   └── tests/                        # Vitest + Playwright (E2E)
+└── packages/
+    └── api-types/                    # tipos TS derivados de contracts/api.yaml
+
+infra/                                # Bicep (Postgres, Redis, Blob, Front Door, Container Apps)
 ```
 
-All services in Azure West Europe (data residency EU — RGPD compliant).
-
----
-
-## Implementation Phases
-
-### Phase 0 — Infrastructure and Developer Environment
-*Prerequisite for all other phases. Blocks nothing in parallel.*
-
-- [ ] Provision Azure PostgreSQL Flexible Server (dev + prod environments).
-- [ ] Provision Azure Blob Storage + CDN rule for `/images/*`.
-- [ ] Provision Azure Cache for Redis.
-- [ ] Configure Typesense Cloud project; obtain API keys.
-- [ ] Configure Supabase project; enable Google and Microsoft providers.
-- [ ] Set up GitHub Actions pipelines: lint → test → build → deploy (staging only in this
-  phase).
-- [ ] Initialise monorepo structure: `apps/api`, `apps/web`, `packages/db`, `infra/`.
-
-### Phase 1 — Database Schema
-*Can begin in parallel with Phase 0 after repo initialisation.*
-
-- [ ] Apply full DDL from `specs/001-lure-catalog-mvp/data-model.md`.
-- [ ] Seed script: 20 brands, 20 species (with PT translations), 50 lures (sample data
-  for development). See `specs/001-lure-catalog-mvp/seed-plan.md`.
-- [ ] `packages/db`: typed query client (Kysely or Drizzle ORM); generated types from
-  schema.
-- [ ] Database migration tooling set up (e.g. Flyway or Drizzle Kit migrations).
-
-### Phase 2 — Catalog API (read path)
-*Depends on Phase 1. [P] with Phase 3.*
-
-- [ ] `GET /v1/lures` — paginated list with Typesense-backed filter + search.
-  See `contracts/lures-list.yaml`.
-- [ ] `GET /v1/lures/:slug` — detail page data.
-  See `contracts/lure-detail.yaml`.
-- [ ] `GET /v1/lures/suggest` — autocomplete endpoint (Typesense instant search).
-- [ ] `GET /v1/species` — list for filter dropdown.
-- [ ] `GET /v1/brands` — list for filter dropdown.
-- [ ] Typesense collection schema + indexing job for initial seed.
-- [ ] Write-through sync: on any lure INSERT/UPDATE in Postgres → re-index in Typesense.
-
-### Phase 3 — Auth Integration
-*Depends on Phase 0 (Supabase configured). [P] with Phase 2.*
-
-- [ ] Supabase Auth integrated in Next.js (server-side session via `@supabase/ssr`).
-- [ ] Google sign-in flow: end-to-end.
-- [ ] Microsoft MSA sign-in flow: end-to-end (validate `iss` = `https://login.microsoftonline.com/9188040d-.../v2.0`).
-- [ ] Email + password flow: registration, sign-in, password reset.
-- [ ] Username selection screen on first OAuth sign-in.
-- [ ] Multi-provider linking: user in settings can link a second provider to existing
-  account.
-- [ ] `POST /v1/auth/sync` — internal endpoint; called by Supabase webhook on new user
-  created; creates `users` row in Postgres.
-- [ ] Rate limiting middleware on API (Redis-backed, per IP and per user).
-
-### Phase 4 — Catalog Frontend (read path)
-*Depends on Phases 2 and 3 (auth needed for favorites state on cards).*
-
-- [ ] Catalog listing page (`/iscas`): grid + filter panel.
-- [ ] Filter panel: lure type, water type, species, weight range (slider), brand,
-  depth range. URL-synced state.
-- [ ] Sort controls: popularity, avg price, newest.
-- [ ] Lure card component: image, name, brand, type badge, weight, species icons,
-  avg price, favorite count, favorite button (auth-gated).
-- [ ] Infinite scroll or pagination (decision: [NEEDS CLARIFICATION — UX preference]).
-- [ ] Autocomplete search bar in header (shared component).
-- [ ] Lure detail page (`/iscas/:slug`): full spec sheet, gallery, pricing table, reviews.
-- [ ] i18n: PT-PT strings 100%, EN strings 100%. ES strings 80%.
-- [ ] SEO: `<title>`, `<meta description>`, Open Graph, structured data
-  (`Product` schema.org for lures with price).
-
-### Phase 5 — Favorites and Inventory
-*Depends on Phase 3 (auth) and Phase 4 (frontend components).*
-
-- [ ] `POST /v1/me/favorites/:lureId` — add favorite.
-- [ ] `DELETE /v1/me/favorites/:lureId` — remove favorite.
-- [ ] `GET /v1/me/favorites` — list favorites (paginated, filterable, same as catalog).
-  See `contracts/favorites.yaml`.
-- [ ] `POST /v1/me/inventory` — add to inventory (with quantity, condition, color, notes).
-- [ ] `PATCH /v1/me/inventory/:entryId` — update entry.
-- [ ] `DELETE /v1/me/inventory/:entryId` — remove entry.
-- [ ] `GET /v1/me/inventory` — list inventory grouped by lure type.
-  See `contracts/inventory.yaml`.
-- [ ] Favorites page (`/conta/favoritos`).
-- [ ] Inventory page (`/conta/inventario`): grouped by type, shows quantity + condition.
-- [ ] Optimistic UI for favorite toggle.
-- [ ] "Add to inventory" modal on lure card and detail page.
-
-### Phase 6 — Reviews
-*Depends on Phase 3 (auth) and Phase 4 (detail page).*
-
-- [ ] `POST /v1/lures/:slug/reviews` — submit review (rating + optional text).
-- [ ] `PATCH /v1/lures/:slug/reviews/:reviewId` — edit own review.
-- [ ] `DELETE /v1/lures/:slug/reviews/:reviewId` — delete own review.
-- [ ] `GET /v1/lures/:slug/reviews` — paginated list, sorted by recent.
-- [ ] `POST /v1/reviews/:reviewId/helpful` — mark helpful (toggle).
-- [ ] Review list + form on lure detail page.
-- [ ] Aggregate rating (avg + distribution) displayed prominently on detail page.
-
-### Phase 7 — User Profile and Backoffice
-*Can begin in parallel with Phase 6.*
-
-- [ ] Public profile page (`/u/:username`): avatar, username, member since, counts.
-- [ ] Settings page: update display name, avatar. Link/unlink auth providers.
-- [ ] RGPD: "Delete my account" flow → soft-delete (`deleted_at`), nullify PII,
-  confirmation email.
-- [ ] Backoffice (internal, auth-gated to `role = 'admin'`):
-  - Lure CRUD with form validation against mandatory schema fields.
-  - Brand and species management.
-  - `lure_retailer_prices` management (add link + price per retailer; auto-recalculates
-    `price_6m_*` fields on save).
-  - Review moderation: hide/show review.
-
-### Phase 8 — QA, Performance, and Launch Readiness
-- [ ] Lighthouse CI: LCP < 2.5s, CLS < 0.1, FID < 100ms on catalog and detail pages.
-- [ ] Typesense query latency: p95 < 80ms (measured from API, not browser).
-- [ ] Load test: 200 concurrent users on catalog listing, < 200ms p95 API response.
-- [ ] WCAG 2.1 AA audit on catalog, detail, favorites, inventory pages.
-- [ ] Security review: OWASP Top 10 checklist, rate limiting validation, auth flow
-  penetration.
-- [ ] Populate production catalog: 500+ lures, 50+ brands, 20+ species.
-- [ ] PT-PT translation review by native speaker.
-- [ ] Cookie banner: consent for analytics only (no essential cookies require consent).
-- [ ] Staging → Production cutover checklist.
-
----
+**Structure Decision**: aplicação web com backend e frontend separados. Mantêm-se **3 projetos
+top-level** (`apps/api`, `apps/web`, `infra`) para satisfazer o Gate I. O backend é um **único
+projeto C#** com organização por vertical slices em vez do split clássico Domain/Infrastructure/Api —
+escolha deliberada de simplicidade (YAGNI) para um MVP; refatorar para camadas separadas só quando
+o tamanho justificar. `packages/api-types` existe apenas para hospedar os tipos gerados do contrato
+(Princípio III) e não é um projeto de runtime.
 
 ## Complexity Tracking
 
-| Decision | Complexity Added | Justification |
+> Serviços geridos externos adicionam dependências; justificados por NFRs/spec e pelo Princípio I
+> (preferir serviço gerido a construir auth/busca à mão).
+
+| Decisão | Complexidade adicionada | Justificativa / Alternativa simples rejeitada |
 |---|---|---|
-| Typesense alongside Postgres | Medium | Required by Article V; SQL LIKE not acceptable at scale. |
-| Supabase Auth | Low | Removes custom auth complexity; worth managed service cost. |
-| SSR via Next.js | Medium | Required by SEO non-functional requirement (G5, US-03 indexability). |
-| Write-through Typesense sync | Low-Medium | Simpler than CDC / event-driven sync for v1 volume. |
+| Typesense ao lado do Postgres | Média | Busca facetada + autocomplete < 150ms (NFR). SQL `ILIKE` não escala nem ranqueia por relevância. |
+| Supabase Auth (broker OIDC) | Baixa | Google + MSA + email/senha + linking multi-provedor + refresh, prontos. Construir isto em ASP.NET Core Identity seria muito mais código (viola YAGNI). Azure AD B2C/Entra está fora por NG6. |
+| Redis | Baixa | Rate limiting distribuído (NFR) + cache de autocomplete. Necessário com múltiplas instâncias de API. |
+| Next.js (SSR) em vez de SPA | Média | Indexabilidade SEO das páginas de catálogo/detalhe (US-03, G5). Uma SPA pura não atende ao requisito de SSR/SSG. |
+
+## Phase 0 — Outline & Research
+
+**Output**: [research.md](research.md) — resolve as escolhas de stack ao migrar de Node.js para
+.NET (ORM, auth com .NET, rate limiting nativo, cliente Typesense .NET, sync write-through,
+geração de tipos a partir do OpenAPI) e as duas `NEEDS CLARIFICATION` (paginação vs. infinite
+scroll; hosting do frontend), com Decisão / Rationale / Alternativas para cada.
+
+## Phase 1 — Design & Contracts
+
+**Prerequisites**: `research.md` completo.
+
+1. **Data model** → [data-model.md](data-model.md): **preservado**. DDL PostgreSQL é a fonte
+   canônica do schema; será materializado via **migrations do EF Core** (code-first mapeado ao
+   schema, ou migrations baseadas no DDL existente).
+2. **Contracts** → [contracts/api.yaml](contracts/api.yaml): **preservado** (OpenAPI 3.1). É o
+   contrato do Princípio III; o backend ASP.NET Core deve servir/validar contra ele e o Next.js
+   gera tipos a partir dele. Endpoints cobrem catálogo, auth-sync, favoritos, inventário e reviews.
+3. **Quickstart** → [quickstart.md](quickstart.md): guia de validação ponta-a-ponta (subir Postgres
+   + Redis + Typesense locais, rodar a API .NET, rodar o Next.js, e os cenários que provam US-01…US-08).
+4. **Agent context**: `CLAUDE.md` atualizado entre os marcadores SPECKIT para apontar para este plano.
+
+## Phase 2 — Tasks
+
+`/speckit-tasks` regenera `tasks.md`. **A `tasks.md` atual está obsoleta** (foi gerada para a stack
+Node.js/Fastify) e MUST ser regenerada após este re-plano.

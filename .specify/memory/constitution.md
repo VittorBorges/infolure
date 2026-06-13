@@ -1,13 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0
-Rationale (latest amendment): Stack definida (.NET backend + React/TypeScript frontend),
-resolvendo TODO(STACK_DECISION). MINOR — expansão material de orientação, sem alterar princípios.
+Version change: 1.1.0 → 1.1.1
+Rationale (latest amendment): Refinamento da stack após o plano da feature 001 — frontend
+precisado como Next.js (React/TS, SSR), backend fixado em .NET 10 LTS, banco em PostgreSQL.
+PATCH — esclarecimento/concretização, sem alterar princípios.
 
 History:
   - 1.0.0 → Initial ratification of the project constitution (MAJOR baseline).
   - 1.1.0 → Restrições Técnicas & Stack concretizadas (.NET + React/TS).
+  - 1.1.1 → Stack refinada pelo plano 001 (Next.js, .NET 10 LTS, PostgreSQL).
 
 Modified principles: N/A (initial adoption)
 Added principles:
@@ -30,8 +32,10 @@ Templates requiring updates:
   - .specify/templates/commands/*.md ⚠ n/a (directory does not exist)
 
 Follow-up TODOs:
-  - Fixar a versão LTS do .NET, o banco de dados e o gerenciador de pacotes/bundler do
-    frontend no primeiro /speckit.plan (estão marcados como "em aberto" na seção de stack).
+  - (Resolvido em 1.1.1) Versão LTS do .NET (.NET 10), banco (PostgreSQL) e frontend (Next.js)
+    fixados pelo plano da feature 001.
+  - Regenerar specs/001-lure-catalog-mvp/tasks.md com /speckit-tasks: a tasks.md atual foi
+    gerada para a stack Node.js/Fastify e está obsoleta após o re-plano.
 -->
 
 # infolure Constitution
@@ -96,15 +100,17 @@ forma consistente é o que separa um protótipo de um produto utilizável.
 
 A stack do projeto está definida da seguinte forma:
 
-- **Backend**: .NET (ASP.NET Core, Web API). A versão LTS exata do .NET MUST ser fixada no
-  primeiro plano técnico (`/speckit.plan`) e mantida consistente em todo o projeto.
-- **Frontend**: React. TypeScript MUST ser usado (em vez de JavaScript puro) para sustentar o
-  Princípio III — os tipos compartilhados são parte do contrato explícito frontend↔backend.
+- **Backend**: .NET (ASP.NET Core, Web API). Versão LTS fixada em **.NET 10 (LTS)** pelo plano da
+  feature 001; MUST ser mantida consistente em todo o projeto.
+- **Frontend**: React via **Next.js** (App Router). TypeScript MUST ser usado (em vez de
+  JavaScript puro) para sustentar o Princípio III — os tipos compartilhados são parte do contrato
+  explícito frontend↔backend. SSR/SSG MUST ser usado em páginas que exigem indexabilidade.
 - **Contrato de API**: a borda entre React e .NET MUST ser descrita por um contrato versionado.
   Recomenda-se OpenAPI/Swagger gerado a partir do backend ASP.NET Core como fonte de verdade,
   com os tipos do frontend derivados desse contrato (Princípio III).
-- **Banco de dados** e **gerenciador de pacotes/bundler do frontend** (ex.: npm/pnpm, Vite)
-  permanecem em aberto e MUST ser decididos e registrados no primeiro `/speckit.plan`.
+- **Banco de dados**: **PostgreSQL** (Azure Database for PostgreSQL Flexible Server), fixado pelo
+  plano da feature 001. **Gerenciador de pacotes/bundler do frontend**: ferramentas nativas do
+  Next.js (npm + Turbopack/webpack do framework).
 
 Regras gerais que permanecem válidas sobre a stack:
 
@@ -142,4 +148,4 @@ decisão pontual e um princípio aqui declarado, o princípio prevalece até ser
 - **Orientação de runtime**: usar `CLAUDE.md` e o plano atual como guia operacional do agente;
   esses documentos MUST permanecer coerentes com esta constituição.
 
-**Version**: 1.1.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-13
+**Version**: 1.1.1 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-13

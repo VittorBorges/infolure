@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Infolure.Api/Infolure.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Infolure.IntegrationTests/Infolure.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

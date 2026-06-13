@@ -326,8 +326,8 @@ components:
         lure_type:        { type: string }
         water_type:       { type: string }
         weight_g:         { type: number }
-        primary_image_url:{ type: string }
-        primary_color_hex:{ type: string }
+        primary_image_url: { type: string }
+        primary_color_hex: { type: string }
         target_species:
           type: array
           items: { type: string }
@@ -393,7 +393,7 @@ components:
                       in_stock:   { type: boolean }
             avg_rating:     { type: number }
             reviews_count:  { type: integer }
-            is_in_inventory:{ type: boolean, description: "null if unauthenticated" }
+            is_in_inventory: { type: boolean, description: "null if unauthenticated" }
 
     Review:
       type: object

@@ -39,6 +39,7 @@ CREATE TABLE lures (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug             TEXT UNIQUE NOT NULL,
   brand_id         UUID REFERENCES brands(id),
+  model_ref        TEXT,                  -- referência de modelo do fabricante (busca US-02)
   lure_type        TEXT NOT NULL,
   water_type       TEXT CHECK (water_type IN ('freshwater','saltwater','both')),
   weight_g         NUMERIC(6,2),
@@ -205,6 +206,7 @@ CREATE INDEX idx_reviews_user ON lure_reviews(user_id);
   "fields": [
     { "name": "id",              "type": "string" },
     { "name": "slug",            "type": "string" },
+    { "name": "model_ref",       "type": "string", "optional": true },
     { "name": "name_pt",         "type": "string" },
     { "name": "name_en",         "type": "string", "optional": true },
     { "name": "name_es",         "type": "string", "optional": true },

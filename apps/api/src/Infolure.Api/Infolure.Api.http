@@ -1,0 +1,6 @@
+@Infolure.Api_HostAddress = http://localhost:5191
+
+GET {{Infolure.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

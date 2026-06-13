@@ -74,7 +74,8 @@ that I find lures suitable for my fishing context without creating an account.
   switch to avg price asc/desc, newest.
 - [ ] Empty state when filters return 0 results shows a clear message and a "reset
   filters" CTA.
-- [ ] Minimum 20 results per page; pagination or infinite scroll.
+- [ ] Minimum 20 results per page; classic pagination (`page` / `page_size`), URL-synced
+  (decisão em research.md — paginação preferida a infinite scroll por SEO/partilha).
 
 **US-02** — As a visitor, I can search lures by name, brand, or model so that I can find
 a specific lure I already know.
@@ -215,6 +216,6 @@ benefit from my experience.
 - ES: 80% coverage acceptable at launch; 100% within 30 days post-launch.
 
 **Data:**
-- Minimum 500 published lures with complete mandatory fields at launch (Article II).
+- Minimum 500 published lures with complete mandatory fields at launch.
 - Minimum 50 brands represented.
 - Minimum 20 species with PT-PT common names.

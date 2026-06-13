@@ -1,0 +1,33 @@
+# Serviços locais de desenvolvimento (quickstart.md): Postgres + Redis + Typesense.
+# Uso: docker compose up -d
+services:
+  postgres:
+    image: postgres:16
+    container_name: infolure-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: infolure
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: infolure-redis
+    ports:
+      - "6379:6379"
+
+  typesense:
+    image: typesense/typesense:27.0
+    container_name: infolure-ts
+    command: "--data-dir /data --api-key=devkey --enable-cors"
+    ports:
+      - "8108:8108"
+    volumes:
+      - tsdata:/data
+
+volumes:
+  pgdata:
+  tsdata:

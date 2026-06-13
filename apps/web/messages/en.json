@@ -1,0 +1,10 @@
+{
+  "app.title": "Infolure — Lure Catalog",
+  "nav.catalog": "Catalog",
+  "search.placeholder": "Search lures, brands or models…",
+  "state.loading": "Loading…",
+  "state.empty.title": "No results",
+  "state.empty.cta": "Clear filters",
+  "state.error.title": "Something went wrong",
+  "state.error.retry": "Try again"
+}

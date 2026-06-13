@@ -1,0 +1,10 @@
+{
+  "app.title": "Infolure — Catálogo de Iscas",
+  "nav.catalog": "Catálogo",
+  "search.placeholder": "Procurar iscas, marcas ou modelos…",
+  "state.loading": "A carregar…",
+  "state.empty.title": "Sem resultados",
+  "state.empty.cta": "Limpar filtros",
+  "state.error.title": "Algo correu mal",
+  "state.error.retry": "Tentar novamente"
+}

@@ -1,0 +1,27 @@
+# .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+*.log
+
+# Ambiente / segredos (nunca versionar — Princípio I + constituição)
+.env
+.env.*
+!.env.example
+
+# Sistema
+.DS_Store
+Thumbs.db
