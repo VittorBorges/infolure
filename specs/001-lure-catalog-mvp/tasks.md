@@ -139,17 +139,17 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Independent Test**: login Google/MSA/email funciona; primeiro login OAuth pede username único (3–20); sessão persiste; linking de 2º provedor nas settings.
 
 ### Tests
-- [ ] T044 [P] [US4] Teste de integração `POST /v1/auth/sync` (cria `users`, vincula provider) em `apps/api/tests/Infolure.IntegrationTests/Auth/AuthSyncTests.cs`
+- [X] T044 [P] [US4] Teste de integração `POST /v1/auth/sync` (cria `users`, vincula provider) em `apps/api/tests/Infolure.IntegrationTests/Auth/AuthSyncTests.cs`
 - [ ] T045 [P] [US4] Teste E2E login + seleção de username em `apps/web/tests/e2e/auth.spec.ts`
 
 ### Implementation
-- [ ] T046 [US4] Adicionar `POST /v1/auth/sync` a `contracts/api.yaml` (webhook Supabase → cria utilizador)
-- [ ] T047 [US4] Endpoint `POST /v1/auth/sync` + serviço (cria `users`, `user_auth_providers`) em `apps/api/src/Infolure.Api/Features/Auth/AuthSyncService.cs`
-- [ ] T048 [US4] Integração Supabase Auth no Next.js (sessão server-side via `@supabase/ssr`, **validação do parâmetro `state` OAuth — anti-CSRF**) em `apps/web/lib/auth.ts`
-- [ ] T049 [P] [US4] Fluxo de sign-in Google + Microsoft MSA em `apps/web/app/(auth)/login/page.tsx`
-- [ ] T050 [P] [US4] Fluxo email + senha (registo, login, reset) em `apps/web/app/(auth)/`
-- [ ] T051 [US4] Ecrã de seleção de username no primeiro login OAuth em `apps/web/app/(auth)/escolher-username/page.tsx`
-- [ ] T052 [P] [US4] Componente de linking multi-provedor em `apps/web/components/settings/AuthProviders.tsx` (consumido pela página de settings, T076)
+- [X] T046 [US4] Adicionar `POST /v1/auth/sync` a `contracts/api.yaml` (webhook Supabase → cria utilizador)
+- [X] T047 [US4] Endpoint `POST /v1/auth/sync` + serviço (cria `users`, `user_auth_providers`) em `apps/api/src/Infolure.Api/Features/Auth/AuthSyncService.cs`
+- [X] T048 [US4] Integração Supabase Auth no Next.js (sessão server-side via `@supabase/ssr`, **validação do parâmetro `state` OAuth — anti-CSRF**) em `apps/web/lib/auth.ts`
+- [X] T049 [P] [US4] Fluxo de sign-in Google + Microsoft MSA em `apps/web/app/(auth)/login/page.tsx`
+- [X] T050 [P] [US4] Fluxo email + senha (registo, login, reset) em `apps/web/app/(auth)/`
+- [X] T051 [US4] Ecrã de seleção de username no primeiro login OAuth em `apps/web/app/(auth)/escolher-username/page.tsx`
+- [X] T052 [P] [US4] Componente de linking multi-provedor em `apps/web/components/settings/AuthProviders.tsx` (consumido pela página de settings, T076)
 
 **Checkpoint**: autenticação completa — habilita features personalizadas (US-05…US-08).
 

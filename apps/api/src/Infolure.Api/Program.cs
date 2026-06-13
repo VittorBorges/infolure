@@ -36,6 +36,7 @@ builder.Services.AddScoped<LureListService>();
 builder.Services.AddScoped<SuggestService>();
 builder.Services.AddScoped<LureDetailService>();
 builder.Services.AddScoped<LureIndexer>();
+builder.Services.AddScoped<Infolure.Api.Features.Auth.AuthSyncService>();
 
 // Controllers (vertical slices nas fases de user story) + OpenAPI (T016)
 builder.Services.AddControllers().AddJsonOptions(o =>

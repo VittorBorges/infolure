@@ -125,6 +125,75 @@ paths:
         "404":
           description: Lure not found or not published
 
+  /v1/auth/sync:
+    post:
+      operationId: syncUser
+      summary: Internal webhook (Supabase) — upserts a user on sign-up/sign-in
+      description: >
+        Called by the Supabase Auth webhook when a user is created or signs in.
+        Idempotent: matches on (provider, provider_uid). Secured by the
+        X-Webhook-Secret header (not user JWT).
+      parameters:
+        - name: X-Webhook-Secret
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, provider_uid]
+              properties:
+                provider:     { type: string, example: google }
+                provider_uid: { type: string }
+                email:        { type: string }
+                display_name: { type: string }
+                avatar_url:   { type: string }
+      responses:
+        "200":
+          description: User upserted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:        { type: string, format: uuid }
+                  username:        { type: string }
+                  needs_username:  { type: boolean }
+        "401":
+          description: Invalid webhook secret
+
+  /v1/auth/username:
+    post:
+      operationId: setUsername
+      summary: Set the authenticated user's username (first OAuth sign-in)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username: { type: string, minLength: 3, maxLength: 20 }
+      responses:
+        "200":
+          description: Username set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username: { type: string }
+        "409":
+          description: Username already taken
+        "422":
+          description: Invalid username format
+
   /v1/lures/{slug}/reviews:
     get:
       operationId: listReviews

@@ -55,6 +55,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal webhook (Supabase) — upserts a user on sign-up/sign-in
+         * @description Called by the Supabase Auth webhook when a user is created or signs in. Idempotent: matches on (provider, provider_uid). Secured by the X-Webhook-Secret header (not user JWT).
+         */
+        post: operations["syncUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/username": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the authenticated user's username (first OAuth sign-in) */
+        post: operations["setUsername"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/lures/{slug}/reviews": {
         parameters: {
             query?: never;
@@ -362,6 +399,93 @@ export interface operations {
             };
             /** @description Lure not found or not published */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    syncUser: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Webhook-Secret"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @example google */
+                    provider: string;
+                    provider_uid: string;
+                    email?: string;
+                    display_name?: string;
+                    avatar_url?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description User upserted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        user_id?: string;
+                        username?: string;
+                        needs_username?: boolean;
+                    };
+                };
+            };
+            /** @description Invalid webhook secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    setUsername: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Username set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        username?: string;
+                    };
+                };
+            };
+            /** @description Username already taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid username format */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
