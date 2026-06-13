@@ -42,6 +42,8 @@ builder.Services.AddScoped<Infolure.Api.Features.Favorites.FavoritesService>();
 builder.Services.AddScoped<Infolure.Api.Features.Inventory.InventoryService>();
 builder.Services.AddScoped<Infolure.Api.Features.Reviews.ReviewsService>();
 builder.Services.AddScoped<Infolure.Api.Features.Users.ProfileService>();
+builder.Services.AddScoped<Infolure.Api.Features.Admin.RetailerPriceService>();
+builder.Services.AddHostedService<Infolure.Api.Infrastructure.Jobs.PopularityJob>();
 
 // Controllers (vertical slices nas fases de user story) + OpenAPI (T016)
 builder.Services.AddControllers().AddJsonOptions(o =>

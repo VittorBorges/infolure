@@ -28,7 +28,9 @@ public class TestAuthHandler(
         var sub = Request.Headers.TryGetValue(SubHeader, out var v) && !string.IsNullOrWhiteSpace(v)
             ? v.ToString()
             : Sub;
-        var claims = new[] { new Claim("sub", sub), new Claim(ClaimTypes.Name, "tester") };
+        var claims = new List<Claim> { new("sub", sub), new(ClaimTypes.Name, "tester") };
+        if (Request.Headers.TryGetValue("X-Test-Role", out var role) && !string.IsNullOrWhiteSpace(role))
+            claims.Add(new Claim("role", role.ToString()));
         var identity = new ClaimsIdentity(claims, Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
         return Task.FromResult(AuthenticateResult.Success(ticket));

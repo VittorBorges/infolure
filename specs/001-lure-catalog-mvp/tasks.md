@@ -241,15 +241,15 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Purpose**: melhorias que afetam múltiplas stories, backoffice e prontidão para lançamento.
 
 ### Backoffice (admin, `role = 'admin'`)
-- [ ] T078 [P] CRUD de iscas com validação dos campos obrigatórios em `apps/web/app/(admin)/iscas/` + endpoints admin em `apps/api/src/Infolure.Api/Features/Admin/`
-- [ ] T079 [P] Gestão de marcas e espécies (admin) em `apps/web/app/(admin)/`
-- [ ] T080 [P] Gestão de `lure_retailer_prices` (recalcula `price_6m_*` ao salvar) em `apps/api/src/Infolure.Api/Features/Admin/RetailerPriceService.cs`
-- [ ] T081 [P] Moderação de reviews (hide/show) em `apps/web/app/(admin)/reviews/`
+- [X] T078 [P] CRUD de iscas com validação dos campos obrigatórios em `apps/web/app/(admin)/iscas/` + endpoints admin em `apps/api/src/Infolure.Api/Features/Admin/`
+- [X] T079 [P] Gestão de marcas e espécies (admin) em `apps/web/app/(admin)/`
+- [X] T080 [P] Gestão de `lure_retailer_prices` (recalcula `price_6m_*` ao salvar) em `apps/api/src/Infolure.Api/Features/Admin/RetailerPriceService.cs`
+- [X] T081 [P] Moderação de reviews (hide/show) em `apps/web/app/(admin)/reviews/`
 
 ### Cross-cutting
-- [ ] T082 Job noturno de `popularity_score` (favorites + inventory) + reindex Typesense em `apps/api/src/Infolure.Api/Infrastructure/Jobs/PopularityJob.cs`
+- [X] T082 Job noturno de `popularity_score` (favorites + inventory) + reindex Typesense em `apps/api/src/Infolure.Api/Infrastructure/Jobs/PopularityJob.cs`
 - [ ] T083 [P] i18n: PT-PT 100%, EN 100%, ES 80% em `apps/web/messages/` + revisão por nativo PT-PT
-- [ ] T084 [P] Cookie banner (consentimento só para analytics) em `apps/web/components/CookieBanner.tsx`
+- [X] T084 [P] Cookie banner (consentimento só para analytics) em `apps/web/components/CookieBanner.tsx`
 - [ ] T085 Lighthouse CI (LCP < 2.5s, CLS < 0.1) em catálogo e detalhe + auditoria WCAG 2.1 AA
 - [ ] T086 Load test (200 utilizadores concorrentes, p95 API < 200ms) + validação de latência Typesense p95 < 80ms
 - [ ] T087 Security review (OWASP Top 10, validação de rate limiting, fluxo de auth, HSTS)

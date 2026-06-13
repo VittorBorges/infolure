@@ -237,6 +237,138 @@ paths:
       responses:
         "204": { description: Account scheduled for deletion }
 
+  # ---- Backoffice (role=admin) ----
+  /v1/admin/brands:
+    post:
+      operationId: adminCreateBrand
+      summary: Create a brand (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, name]
+              properties:
+                slug: { type: string }
+                name: { type: string }
+      responses:
+        "201": { description: Created }
+        "403": { description: Not admin }
+
+  /v1/admin/species:
+    post:
+      operationId: adminCreateSpecies
+      summary: Create a species (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, common_name]
+              properties:
+                slug:        { type: string }
+                water_type:  { type: string, enum: [freshwater, saltwater, both] }
+                common_name: { type: string }
+      responses:
+        "201": { description: Created }
+        "403": { description: Not admin }
+
+  /v1/admin/lures:
+    post:
+      operationId: adminCreateLure
+      summary: Create a lure (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, lure_type, name]
+              properties:
+                slug:      { type: string }
+                lure_type: { type: string }
+                brand_id:  { type: string, format: uuid }
+                name:      { type: string }
+                status:    { type: string, enum: [draft, published, archived] }
+      responses:
+        "201": { description: Created }
+        "403": { description: Not admin }
+
+  /v1/admin/lures/{id}:
+    patch:
+      operationId: adminUpdateLure
+      summary: Update a lure (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:    { type: string, enum: [draft, published, archived] }
+                weight_g:  { type: number }
+      responses:
+        "204": { description: Updated }
+        "403": { description: Not admin }
+
+  /v1/admin/lures/{id}/prices:
+    post:
+      operationId: adminAddRetailerPrice
+      summary: Add a retailer price; recomputes price_6m_min/max/avg (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [retailer, price_eur]
+              properties:
+                retailer:  { type: string }
+                url:       { type: string }
+                price_eur: { type: number }
+                in_stock:  { type: boolean }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  price_6m_min_eur: { type: number }
+                  price_6m_max_eur: { type: number }
+                  price_6m_avg_eur: { type: number }
+        "403": { description: Not admin }
+
+  /v1/admin/reviews/{reviewId}/moderation:
+    patch:
+      operationId: adminModerateReview
+      summary: Hide or show a review (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: reviewId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [published, hidden] }
+      responses:
+        "204": { description: Updated }
+        "403": { description: Not admin }
+
   /v1/lures/{slug}/reviews:
     get:
       operationId: listReviews
