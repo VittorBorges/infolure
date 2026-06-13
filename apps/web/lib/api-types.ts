@@ -92,6 +92,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public profile (no PII — username, avatar, member since, counts) */
+        get: operations["getPublicProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** RGPD account deletion (soft-delete, PII nullified, confirmation email) */
+        delete: operations["deleteMyAccount"];
+        options?: never;
+        head?: never;
+        /** Update own display name / avatar */
+        patch: operations["updateMyProfile"];
+        trace?: never;
+    };
     "/v1/lures/{slug}/reviews": {
         parameters: {
             query?: never;
@@ -519,6 +554,85 @@ export interface operations {
             };
             /** @description Invalid username format */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getPublicProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        username?: string;
+                        avatar_url?: string;
+                        /** Format: date-time */
+                        member_since?: string;
+                        favorites_count?: number;
+                        inventory_count?: number;
+                        reviews_count?: number;
+                    };
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteMyAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account scheduled for deletion */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    display_name?: string;
+                    avatar_url?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

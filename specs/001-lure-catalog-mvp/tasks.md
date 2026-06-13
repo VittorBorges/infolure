@@ -224,13 +224,13 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Independent Test**: `/u/:username` mostra username, avatar, membro desde, contagens; sem email/nome real; settings atualizam nome/avatar.
 
 ### Tests
-- [ ] T073 [P] [US7] Teste de integração perfil público (sem PII) em `apps/api/tests/Infolure.IntegrationTests/Users/ProfileTests.cs`
+- [X] T073 [P] [US7] Teste de integração perfil público (sem PII) em `apps/api/tests/Infolure.IntegrationTests/Users/ProfileTests.cs`
 
 ### Implementation
-- [ ] T074 [US7] Adicionar `GET /v1/users/{username}` a `contracts/api.yaml` + endpoint/serviço em `apps/api/src/Infolure.Api/Features/Users/ProfileService.cs`
-- [ ] T075 [P] [US7] Página de perfil público `/u/[username]` em `apps/web/app/u/[username]/page.tsx`
-- [ ] T076 [P] [US7] Página de settings (nome, avatar) que **compõe** o componente `AuthProviders` (T052) em `apps/web/app/conta/settings/page.tsx`
-- [ ] T077 [US7] Fluxo RGPD "Apagar conta" (soft-delete `deleted_at`, nulificar PII, email de confirmação) em `apps/api/src/Infolure.Api/Features/Users/AccountDeletionService.cs`
+- [X] T074 [US7] Adicionar `GET /v1/users/{username}` a `contracts/api.yaml` + endpoint/serviço em `apps/api/src/Infolure.Api/Features/Users/ProfileService.cs`
+- [X] T075 [P] [US7] Página de perfil público `/u/[username]` em `apps/web/app/u/[username]/page.tsx`
+- [X] T076 [P] [US7] Página de settings (nome, avatar) que **compõe** o componente `AuthProviders` (T052) em `apps/web/app/conta/settings/page.tsx`
+- [X] T077 [US7] Fluxo RGPD "Apagar conta" (soft-delete `deleted_at`, nulificar PII, email de confirmação) em `apps/api/src/Infolure.Api/Features/Users/AccountDeletionService.cs`
 
 **Checkpoint**: todas as user stories funcionais de forma independente.
 

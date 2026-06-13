@@ -194,6 +194,49 @@ paths:
         "422":
           description: Invalid username format
 
+  /v1/users/{username}:
+    get:
+      operationId: getPublicProfile
+      summary: Public profile (no PII — username, avatar, member since, counts)
+      parameters:
+        - { name: username, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:        { type: string }
+                  avatar_url:      { type: string }
+                  member_since:    { type: string, format: date-time }
+                  favorites_count: { type: integer }
+                  inventory_count: { type: integer }
+                  reviews_count:   { type: integer }
+        "404": { description: User not found }
+
+  /v1/me:
+    patch:
+      operationId: updateMyProfile
+      summary: Update own display name / avatar
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string, maxLength: 80 }
+                avatar_url:   { type: string }
+      responses:
+        "204": { description: Updated }
+    delete:
+      operationId: deleteMyAccount
+      summary: RGPD account deletion (soft-delete, PII nullified, confirmation email)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Account scheduled for deletion }
+
   /v1/lures/{slug}/reviews:
     get:
       operationId: listReviews
