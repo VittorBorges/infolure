@@ -1,8 +1,13 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (template/unversioned) → 1.0.0
-Rationale: Initial ratification of the project constitution. MAJOR baseline (1.0.0).
+Version change: 1.0.0 → 1.1.0
+Rationale (latest amendment): Stack definida (.NET backend + React/TypeScript frontend),
+resolvendo TODO(STACK_DECISION). MINOR — expansão material de orientação, sem alterar princípios.
+
+History:
+  - 1.0.0 → Initial ratification of the project constitution (MAJOR baseline).
+  - 1.1.0 → Restrições Técnicas & Stack concretizadas (.NET + React/TS).
 
 Modified principles: N/A (initial adoption)
 Added principles:
@@ -25,8 +30,8 @@ Templates requiring updates:
   - .specify/templates/commands/*.md ⚠ n/a (directory does not exist)
 
 Follow-up TODOs:
-  - Stack tecnológica ainda não definida: registrar a decisão na seção "Restrições Técnicas
-    & Stack" assim que escolhida (provavelmente durante o primeiro /speckit.plan).
+  - Fixar a versão LTS do .NET, o banco de dados e o gerenciador de pacotes/bundler do
+    frontend no primeiro /speckit.plan (estão marcados como "em aberto" na seção de stack).
 -->
 
 # infolure Constitution
@@ -89,19 +94,27 @@ forma consistente é o que separa um protótipo de um produto utilizável.
 
 ## Restrições Técnicas & Stack
 
-A stack tecnológica ainda NÃO está definida. As seguintes regras valem até que seja decidida:
+A stack do projeto está definida da seguinte forma:
 
-- A escolha de stack (linguagem, frameworks de frontend e backend, banco de dados) MUST ser
-  registrada como decisão explícita no primeiro plano técnico (`/speckit.plan`) e refletida aqui
-  por emenda quando consolidada.
-- A stack escolhida MUST ter ecossistema maduro para testes automatizados e logging estruturado
-  (pré-requisito dos Princípios II e IV).
+- **Backend**: .NET (ASP.NET Core, Web API). A versão LTS exata do .NET MUST ser fixada no
+  primeiro plano técnico (`/speckit.plan`) e mantida consistente em todo o projeto.
+- **Frontend**: React. TypeScript MUST ser usado (em vez de JavaScript puro) para sustentar o
+  Princípio III — os tipos compartilhados são parte do contrato explícito frontend↔backend.
+- **Contrato de API**: a borda entre React e .NET MUST ser descrita por um contrato versionado.
+  Recomenda-se OpenAPI/Swagger gerado a partir do backend ASP.NET Core como fonte de verdade,
+  com os tipos do frontend derivados desse contrato (Princípio III).
+- **Banco de dados** e **gerenciador de pacotes/bundler do frontend** (ex.: npm/pnpm, Vite)
+  permanecem em aberto e MUST ser decididos e registrados no primeiro `/speckit.plan`.
+
+Regras gerais que permanecem válidas sobre a stack:
+
+- Backend e frontend MUST ter ecossistema de testes automatizados e logging estruturado
+  configurados (pré-requisito dos Princípios II e IV) — ex.: logging estruturado nativo do
+  .NET (`ILogger` / Serilog) no backend.
 - Dependências de terceiros MUST ser adicionadas com parcimônia (Princípio I): preferir a
-  biblioteca padrão / recursos nativos quando suficientes.
+  biblioteca padrão (.NET BCL / APIs nativas do React) quando suficientes.
 - Segredos e credenciais MUST NOT ser versionados; configuração sensível MUST vir de variáveis
-  de ambiente ou cofre equivalente.
-
-TODO(STACK_DECISION): substituir esta seção pela stack definitiva após a primeira decisão de plano.
+  de ambiente, user-secrets do .NET ou cofre equivalente.
 
 ## Fluxo de Desenvolvimento & Quality Gates
 
@@ -129,4 +142,4 @@ decisão pontual e um princípio aqui declarado, o princípio prevalece até ser
 - **Orientação de runtime**: usar `CLAUDE.md` e o plano atual como guia operacional do agente;
   esses documentos MUST permanecer coerentes com esta constituição.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-13
+**Version**: 1.1.0 | **Ratified**: 2026-06-13 | **Last Amended**: 2026-06-13
