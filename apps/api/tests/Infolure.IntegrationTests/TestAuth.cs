@@ -20,10 +20,15 @@ public class TestAuthHandler(
 {
     public const string Scheme = "Test";
     public const string Sub = "test-fav-sub-0001";
+    public const string SubHeader = "X-Test-Sub";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var claims = new[] { new Claim("sub", Sub), new Claim(ClaimTypes.Name, "tester") };
+        // Permite que cada classe de teste use um `sub` distinto (evita corrida entre classes paralelas).
+        var sub = Request.Headers.TryGetValue(SubHeader, out var v) && !string.IsNullOrWhiteSpace(v)
+            ? v.ToString()
+            : Sub;
+        var claims = new[] { new Claim("sub", sub), new Claim(ClaimTypes.Name, "tester") };
         var identity = new ClaimsIdentity(claims, Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
         return Task.FromResult(AuthenticateResult.Success(ticket));

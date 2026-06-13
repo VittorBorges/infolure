@@ -183,14 +183,14 @@ resultados atualizam sem reload, estado nos query params, empty state com CTA qu
 **Independent Test**: adicionar com quantidade (1–99)/condição/notas; editar; remover; especificar cores; "Meu Inventário" agrupado por tipo; contagem no perfil.
 
 ### Tests
-- [ ] T060 [P] [US6] Testes de contrato inventário (list/add/update/delete) em `apps/api/tests/Infolure.IntegrationTests/Inventory/InventoryContractTests.cs`
+- [X] T060 [P] [US6] Testes de contrato inventário (list/add/update/delete) em `apps/api/tests/Infolure.IntegrationTests/Inventory/InventoryContractTests.cs`
 - [ ] T061 [P] [US6] Teste E2E inventário em `apps/web/tests/e2e/inventory.spec.ts`
 
 ### Implementation
-- [ ] T062 [US6] Serviço de inventário (validações de quantidade/condição/notas ≤ 200) em `apps/api/src/Infolure.Api/Features/Inventory/InventoryService.cs`
-- [ ] T063 [US6] Endpoints `GET`/`POST /v1/me/inventory`, `PATCH`/`DELETE /v1/me/inventory/{entryId}` em `apps/api/src/Infolure.Api/Features/Inventory/InventoryEndpoints.cs`
-- [ ] T064 [P] [US6] Modal "Adicionar ao inventário" (qty/condição/cor/notas) em `apps/web/components/inventory/AddToInventoryModal.tsx`
-- [ ] T065 [P] [US6] Página `/conta/inventario` agrupada por tipo em `apps/web/app/conta/inventario/page.tsx`
+- [X] T062 [US6] Serviço de inventário (validações de quantidade/condição/notas ≤ 200) em `apps/api/src/Infolure.Api/Features/Inventory/InventoryService.cs`
+- [X] T063 [US6] Endpoints `GET`/`POST /v1/me/inventory`, `PATCH`/`DELETE /v1/me/inventory/{entryId}` em `apps/api/src/Infolure.Api/Features/Inventory/InventoryEndpoints.cs`
+- [X] T064 [P] [US6] Modal "Adicionar ao inventário" (qty/condição/cor/notas) em `apps/web/components/inventory/AddToInventoryModal.tsx`
+- [X] T065 [P] [US6] Página `/conta/inventario` agrupada por tipo em `apps/web/app/conta/inventario/page.tsx`
 
 **Checkpoint**: inventário funcional.
 

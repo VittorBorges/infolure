@@ -6,6 +6,7 @@ import { ApiError } from '../../../lib/api';
 import { Gallery } from '../../../components/detail/Gallery';
 import { PricingSection } from '../../../components/detail/PricingSection';
 import { FavoriteButton } from '../../../components/catalog/FavoriteButton';
+import { AddToInventory } from '../../../components/inventory/AddToInventoryModal';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,6 +106,11 @@ export default async function LureDetailPage({
               {lure.target_species_detail.map((s) => s.common_name).join(', ')}
             </p>
           )}
+
+          <AddToInventory
+            lureId={lure.id}
+            colors={lure.colors.map((c) => ({ id: c.id, name: c.name }))}
+          />
         </div>
       </div>
 
