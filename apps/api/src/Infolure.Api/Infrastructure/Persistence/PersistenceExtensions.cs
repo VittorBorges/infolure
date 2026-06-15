@@ -10,13 +10,18 @@ public static class PersistenceExtensions
         var connectionString = config.GetConnectionString("Postgres")
             ?? "Host=localhost;Port=5432;Database=infolure;Username=postgres;Password=dev";
 
-        // Feature 002: interceptor de soft-delete/auditável (T006).
+        // Feature 002: interceptors (T006 soft-delete, T026 auditoria) + contexto de ação admin.
         services.AddSingleton<AuditSaveChangesInterceptor>();
+        services.AddSingleton<AdminAuditInterceptor>();
+        services.AddScoped<IAdminActionContext, AdminActionContext>();
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseNpgsql(connectionString)
                    .UseSnakeCaseNamingConvention()
-                   .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>()));
+                   // Ordem importa: soft-delete converte Deleted→Modified ANTES da auditoria observar o estado.
+                   .AddInterceptors(
+                       sp.GetRequiredService<AuditSaveChangesInterceptor>(),
+                       sp.GetRequiredService<AdminAuditInterceptor>()));
 
         return services;
     }

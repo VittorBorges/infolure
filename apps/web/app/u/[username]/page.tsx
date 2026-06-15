@@ -27,7 +27,8 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  return { title: `@${username} — Infolure` };
+  // US-03 (T045/FR-018): páginas de utilizador nunca são indexáveis.
+  return { title: `@${username} — Infolure`, robots: { index: false, follow: false } };
 }
 
 // US-07 (T075) — perfil público: username, avatar, membro desde, contagens. Sem PII.

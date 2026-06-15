@@ -43,10 +43,15 @@ builder.Services.AddScoped<Infolure.Api.Features.Inventory.InventoryService>();
 builder.Services.AddScoped<Infolure.Api.Features.Reviews.ReviewsService>();
 builder.Services.AddScoped<Infolure.Api.Features.Users.ProfileService>();
 builder.Services.AddScoped<Infolure.Api.Features.Admin.RetailerPriceService>();
+builder.Services.AddScoped<Infolure.Api.Features.Admin.AdminResourceService>();      // F002 US-02
+builder.Services.AddScoped<Infolure.Api.Features.Admin.DashboardService>();           // F002 US-02
+builder.Services.AddScoped<Infolure.Api.Features.Seo.SeoSettingsService>();           // F002 US-03
 builder.Services.AddHostedService<Infolure.Api.Infrastructure.Jobs.PopularityJob>();
 
 // Controllers (vertical slices nas fases de user story) + OpenAPI (T016)
-builder.Services.AddControllers().AddJsonOptions(o =>
+builder.Services.AddScoped<Infolure.Api.Features.Admin.AdminAuditFilter>(); // F002 US-02
+builder.Services.AddControllers(o => o.Filters.Add<Infolure.Api.Features.Admin.AdminAuditFilter>())
+    .AddJsonOptions(o =>
 {
     o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     o.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;

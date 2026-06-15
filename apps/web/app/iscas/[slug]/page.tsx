@@ -20,6 +20,20 @@ async function load(slug: string): Promise<LureDetail | null> {
   }
 }
 
+// US-03 (T044): indexável se o interruptor global estiver ligado E a isca constar do sitemap
+// (published+active+indexable+marca ativa). Caso contrário → noindex.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5191';
+async function isIndexable(slug: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/v1/seo`, { cache: 'no-store' });
+    if (!res.ok) return false;
+    const seo = (await res.json()) as { indexing_enabled: boolean; sitemap: { slug: string }[] };
+    return seo.indexing_enabled && seo.sitemap.some((s) => s.slug === slug);
+  } catch {
+    return false;
+  }
+}
+
 // SEO (US-03): título, descrição, Open Graph e canonical por slug.
 export async function generateMetadata({
   params,
@@ -32,9 +46,11 @@ export async function generateMetadata({
 
   const title = `${lure.name}${lure.brand ? ` · ${lure.brand}` : ''} — Infolure`;
   const description = lure.description ?? `Ficha técnica da isca ${lure.name}.`;
+  const indexable = await isIndexable(lure.slug);
   return {
     title,
     description,
+    robots: { index: indexable, follow: indexable },
     alternates: { canonical: `/iscas/${lure.slug}` },
     openGraph: {
       title,

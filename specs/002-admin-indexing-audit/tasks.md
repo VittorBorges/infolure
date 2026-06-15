@@ -89,30 +89,30 @@ registos; não-admin recebe 403; utilizador desativado deixa de autenticar.
 
 ### Tests for User Story 2
 
-- [ ] T020 [P] [US2] Teste de integração: não-admin recebe 403 em `/v1/admin/*` em `apps/api/tests/Infolure.IntegrationTests/Admin/AdminGatingTests.cs`
-- [ ] T021 [P] [US2] Teste de integração: CRUD por recurso (list filtro/paginação, create, patch, soft-delete, restore, toggle active) para `lures` e `users`, incluindo efeitos colaterais (reindex Typesense em `lures`) em `.../Admin/AdminCrudTests.cs`
-- [ ] T022 [P] [US2] Teste de integração: bloqueios FR-013 (último admin / auto-desativação) → 409 em `.../Admin/AdminSafeguardsTests.cs`
-- [ ] T023 [P] [US2] Teste de integração: utilizador desativado → 401 na requisição seguinte (FR-013a) em `.../Admin/InactiveUserAuthTests.cs`
-- [ ] T024 [P] [US2] Teste de integração: `GET /v1/admin/dashboard` devolve as métricas esperadas em `.../Admin/DashboardTests.cs`
-- [ ] T025 [P] [US2] Teste de integração: operação sobre dados pessoais grava auditoria com `changes` antes→depois (FR-020a) em `.../Admin/AuditWriteTests.cs`
+- [x] T020 [P] [US2] Teste de integração: não-admin recebe 403 em `/v1/admin/*` em `apps/api/tests/Infolure.IntegrationTests/Admin/AdminGatingTests.cs`
+- [x] T021 [P] [US2] Teste de integração: CRUD por recurso (list filtro/paginação, create, patch, soft-delete, restore, toggle active) para `lures` e `users`, incluindo efeitos colaterais (reindex Typesense em `lures`) em `.../Admin/AdminCrudTests.cs`
+- [x] T022 [P] [US2] Teste de integração: bloqueios FR-013 (último admin / auto-desativação) → 409 em `.../Admin/AdminSafeguardsTests.cs`
+- [x] T023 [P] [US2] Teste de integração: utilizador desativado → 401 na requisição seguinte (FR-013a) em `.../Admin/InactiveUserAuthTests.cs`
+- [x] T024 [P] [US2] Teste de integração: `GET /v1/admin/dashboard` devolve as métricas esperadas em `.../Admin/DashboardTests.cs`
+- [x] T025 [P] [US2] Teste de integração: operação sobre dados pessoais grava auditoria com `changes` antes→depois (FR-020a) em `.../Admin/AuditWriteTests.cs`
 
 ### Implementation for User Story 2 (backend)
 
-- [ ] T026 [US2] Implementar `AdminAuditInterceptor` (`ISaveChangesInterceptor`): quando existe um `IAdminActionContext` ativo, emite **uma entrada em `admin_audit_log` por entidade escrita** (create/update/soft-delete/restore/toggle), garantindo FR-020/SC-007 por construção, em `Infrastructure/Persistence/Auditing/AdminAuditInterceptor.cs`
-- [ ] T027 [US2] Endpoints admin **por recurso** assentes numa base partilhada (`AdminResourceServiceBase`: list/filtro/paginação/soft-delete/restore/toggle-active), **preservando os efeitos colaterais** (reindex Typesense em `lures`, recálculo de preços, moderação de reviews) em `Features/Admin/` (conforme `contracts/admin-api.yaml`)
-- [ ] T027b [US2] Reconciliar o `AdminController` atual: migrar `brands`/`species`/`lures`/`prices`/`reviews-moderation` para o padrão de recurso, **eliminando rotas duplicadas** com o CRUD; manter a moderação de reviews como endpoint dedicado e **excluir `reviews` do patch genérico** (M1) em `Features/Admin/AdminController.cs`
-- [ ] T028 [US2] `DashboardService` + `GET /v1/admin/dashboard` (cadastros 7/30d + série, iscas por status/source/active, reviews pendentes, totais) em `Features/Admin/DashboardService.cs`
-- [ ] T029 [US2] Bloqueios de segurança (último admin, auto-eliminação/desativação) na camada de serviço em `Features/Admin/`
-- [ ] T030 [US2] Definir o `IAdminActionContext` (scoped, populado pela autenticação admin) e marcar os tipos de **dados pessoais** (users/favorites/inventory) para que o `AdminAuditInterceptor` inclua o snapshot `changes` antes→depois (FR-020a) em `Infrastructure/Persistence/Auditing/` + `Features/Admin/`
-- [ ] T031 [US2] Reindex Typesense nas operações admin que afetam visibilidade em `Features/Admin/` (reutilizar `LureIndexer`)
+- [x] T026 [US2] Implementar `AdminAuditInterceptor` (`ISaveChangesInterceptor`): quando existe um `IAdminActionContext` ativo, emite **uma entrada em `admin_audit_log` por entidade escrita** (create/update/soft-delete/restore/toggle), garantindo FR-020/SC-007 por construção, em `Infrastructure/Persistence/Auditing/AdminAuditInterceptor.cs`
+- [x] T027 [US2] Endpoints admin **por recurso** assentes numa base partilhada (`AdminResourceServiceBase`: list/filtro/paginação/soft-delete/restore/toggle-active), **preservando os efeitos colaterais** (reindex Typesense em `lures`, recálculo de preços, moderação de reviews) em `Features/Admin/` (conforme `contracts/admin-api.yaml`)
+- [x] T027b [US2] Reconciliar o `AdminController` atual: migrar `brands`/`species`/`lures`/`prices`/`reviews-moderation` para o padrão de recurso, **eliminando rotas duplicadas** com o CRUD; manter a moderação de reviews como endpoint dedicado e **excluir `reviews` do patch genérico** (M1) em `Features/Admin/AdminController.cs`
+- [x] T028 [US2] `DashboardService` + `GET /v1/admin/dashboard` (cadastros 7/30d + série, iscas por status/source/active, reviews pendentes, totais) em `Features/Admin/DashboardService.cs`
+- [x] T029 [US2] Bloqueios de segurança (último admin, auto-eliminação/desativação) na camada de serviço em `Features/Admin/`
+- [x] T030 [US2] Definir o `IAdminActionContext` (scoped, populado pela autenticação admin) e marcar os tipos de **dados pessoais** (users/favorites/inventory) para que o `AdminAuditInterceptor` inclua o snapshot `changes` antes→depois (FR-020a) em `Infrastructure/Persistence/Auditing/` + `Features/Admin/`
+- [x] T031 [US2] Reindex Typesense nas operações admin que afetam visibilidade em `Features/Admin/` (reutilizar `LureIndexer`)
 
 ### Implementation for User Story 2 (frontend)
 
-- [ ] T032 [P] [US2] Proteção da rota `/admin` por role admin (convenção `proxy`/middleware conforme docs Next 16) em `apps/web/`
-- [ ] T033 [US2] Layout do painel + dashboard com estados loading/empty/error em `apps/web/app/admin/page.tsx`
-- [ ] T034 [P] [US2] Componentes genéricos data-table + form em `apps/web/components/admin/`
-- [ ] T035 [US2] Páginas CRUD por entidade (list/create/edit) em `apps/web/app/admin/[resource]/`
-- [ ] T036 [US2] Modal de aviso RGPD antes de operações sobre dados pessoais em `apps/web/components/admin/`
+- [x] T032 [P] [US2] Proteção da rota `/admin` por role admin (convenção `proxy`/middleware conforme docs Next 16) em `apps/web/`
+- [x] T033 [US2] Layout do painel + dashboard com estados loading/empty/error em `apps/web/app/admin/page.tsx`
+- [x] T034 [P] [US2] Componentes genéricos data-table + form em `apps/web/components/admin/`
+- [x] T035 [US2] Páginas CRUD por entidade (list/create/edit) em `apps/web/app/admin/[resource]/`
+- [x] T036 [US2] Modal de aviso RGPD antes de operações sobre dados pessoais em `apps/web/components/admin/`
 - [ ] T036b [US2] Disponibilizar no painel a **eliminação RGPD efetiva** (remoção/anonimização irreversível, reutilizando o fluxo da Feature 001), distinta e claramente rotulada face ao soft-delete reversível (FR-012a), em `apps/web/app/admin/[resource]/` (users)
 
 **Checkpoint**: Backoffice operacional e independente; US-01 e US-02 funcionam.
@@ -129,19 +129,19 @@ robots/sitemap/metadata; perfis sempre noindex.
 
 ### Tests for User Story 3
 
-- [ ] T037 [P] [US3] Teste de integração: `PUT /v1/admin/settings/indexing` invalida cache; `GET /v1/seo` reflete; sitemap só lista elegíveis em `apps/api/tests/Infolure.IntegrationTests/Seo/IndexingToggleTests.cs`
+- [x] T037 [P] [US3] Teste de integração: `PUT /v1/admin/settings/indexing` invalida cache; `GET /v1/seo` reflete; sitemap só lista elegíveis em `apps/api/tests/Infolure.IntegrationTests/Seo/IndexingToggleTests.cs`
 - [ ] T038 [P] [US3] Teste E2E: toggle OFF → robots disallow + sitemap vazio + detalhe noindex; perfis sempre noindex em `apps/web/tests/e2e/indexing.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T039 [US3] `SeoSettingsService` (ler/gravar `app_settings`, cache Redis TTL≤60s + invalidação) em `Features/Seo/SeoSettingsService.cs`
-- [ ] T040 [US3] `GET /v1/seo` (flag + dados de sitemap) em `Features/Seo/SeoController.cs`
-- [ ] T041 [US3] `PUT /v1/admin/settings/indexing` (atualiza + invalida cache + auditoria `settings_update`) em `Features/Admin/`
-- [ ] T042 [P] [US3] `app/robots.ts` dinâmico (Allow/Disallow conforme flag) em `apps/web/app/robots.ts`
-- [ ] T043 [P] [US3] `app/sitemap.ts` dinâmico (iscas published+active+não-eliminadas+indexable) em `apps/web/app/sitemap.ts`
-- [ ] T044 [US3] `generateMetadata` do detalhe: `noindex` quando flag off ou `is_indexable=false` em `apps/web/app/iscas/[slug]/page.tsx`
-- [ ] T045 [P] [US3] Perfis sempre `noindex` em `apps/web/app/u/[username]/`
-- [ ] T046 [US3] Toggle `is_indexable` por isca na UI do painel em `apps/web/app/admin/[resource]/` (lures)
+- [x] T039 [US3] `SeoSettingsService` (ler/gravar `app_settings`, cache Redis TTL≤60s + invalidação) em `Features/Seo/SeoSettingsService.cs`
+- [x] T040 [US3] `GET /v1/seo` (flag + dados de sitemap) em `Features/Seo/SeoController.cs`
+- [x] T041 [US3] `PUT /v1/admin/settings/indexing` (atualiza + invalida cache + auditoria `settings_update`) em `Features/Admin/`
+- [x] T042 [P] [US3] `app/robots.ts` dinâmico (Allow/Disallow conforme flag) em `apps/web/app/robots.ts`
+- [x] T043 [P] [US3] `app/sitemap.ts` dinâmico (iscas published+active+não-eliminadas+indexable) em `apps/web/app/sitemap.ts`
+- [x] T044 [US3] `generateMetadata` do detalhe: `noindex` quando flag off ou `is_indexable=false` em `apps/web/app/iscas/[slug]/page.tsx`
+- [x] T045 [P] [US3] Perfis sempre `noindex` em `apps/web/app/u/[username]/`
+- [x] T046 [US3] Toggle `is_indexable` por isca na UI do painel em `apps/web/app/admin/[resource]/` (lures)
 
 **Checkpoint**: Indexação controlável; US-01..US-03 funcionam.
 

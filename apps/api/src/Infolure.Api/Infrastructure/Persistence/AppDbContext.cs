@@ -5,8 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infolure.Api.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionContext? adminContext = null)
+    : DbContext(options)
 {
+    /// <summary>Contexto de ação admin (scoped); null fora de requisições admin. Lido pelo AdminAuditInterceptor.</summary>
+    public IAdminActionContext? AdminContext { get; } = adminContext;
+
     // Catalog
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<BrandTranslation> BrandTranslations => Set<BrandTranslation>();
