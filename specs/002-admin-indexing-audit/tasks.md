@@ -156,12 +156,12 @@ correspondentes; UI permite filtrar.
 
 ### Tests for User Story 4
 
-- [ ] T047 [P] [US4] Teste de integração: `GET /v1/admin/audit` filtra por actor/action/período + paginação em `apps/api/tests/Infolure.IntegrationTests/Admin/AuditQueryTests.cs`
+- [x] T047 [P] [US4] Teste de integração: `GET /v1/admin/audit` filtra por actor/action/período + paginação em `apps/api/tests/Infolure.IntegrationTests/Admin/AuditQueryTests.cs`
 
 ### Implementation for User Story 4
 
-- [ ] T048 [US4] `GET /v1/admin/audit` (filtros + paginação) em `Features/Admin/AuditController.cs`
-- [ ] T049 [US4] UI de consulta de auditoria (tabela filtrável) em `apps/web/app/admin/audit/`
+- [x] T048 [US4] `GET /v1/admin/audit` (filtros + paginação) em `Features/Admin/AuditController.cs`
+- [x] T049 [US4] UI de consulta de auditoria (tabela filtrável) em `apps/web/app/admin/audit/`
 
 **Checkpoint**: Todas as user stories funcionais e independentes.
 

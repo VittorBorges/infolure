@@ -29,6 +29,36 @@ public class AdminController(
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard(CancellationToken ct) => Ok(await dashboard.GetAsync(ct));
 
+    // ---- Consulta do registo de auditoria (US-04 / FR-021) ----
+    [HttpGet("audit")]
+    public async Task<IActionResult> Audit(
+        [FromQuery] Guid? actor, [FromQuery] string? action,
+        [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to,
+        [FromQuery] int page = 1, [FromQuery(Name = "per_page")] int perPage = 20, CancellationToken ct = default)
+    {
+        page = Math.Max(1, page);
+        perPage = Math.Clamp(perPage <= 0 ? 20 : perPage, 1, 100);
+
+        var q = db.AdminAuditLog.AsQueryable();
+        if (actor is { } a) q = q.Where(e => e.ActorUserId == a);
+        if (!string.IsNullOrWhiteSpace(action)) q = q.Where(e => e.Action == action);
+        if (from is { } f) q = q.Where(e => e.CreatedAt >= f);
+        if (to is { } t) q = q.Where(e => e.CreatedAt <= t);
+
+        var total = await q.CountAsync(ct);
+        var data = await q.OrderByDescending(e => e.CreatedAt)
+            .Skip((page - 1) * perPage).Take(perPage)
+            .Select(e => new
+            {
+                id = e.Id, actor_user_id = e.ActorUserId, action = e.Action,
+                entity_type = e.EntityType, entity_id = e.EntityId,
+                is_personal_data = e.IsPersonalData, changes = e.Changes, created_at = e.CreatedAt,
+            })
+            .ToListAsync(ct);
+
+        return Ok(new { data, meta = new { total, page, per_page = perPage } });
+    }
+
     // ---- Listagem genérica por recurso (FR-010) ----
     [HttpGet("{resource}")]
     public async Task<IActionResult> List(string resource, [FromQuery] string? q, [FromQuery(Name = "is_active")] bool? isActive,

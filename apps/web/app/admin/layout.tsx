@@ -11,6 +11,7 @@ const NAV: { href: string; label: string }[] = [
   { href: '/admin/brands', label: 'Marcas' },
   { href: '/admin/species', label: 'Espécies' },
   { href: '/admin/users', label: 'Utilizadores' },
+  { href: '/admin/audit', label: 'Auditoria' },
 ];
 
 // T032 — gate de sessão. A autorização admin (role) é verificada no backend por requisição;
