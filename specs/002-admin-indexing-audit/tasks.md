@@ -113,7 +113,7 @@ registos; não-admin recebe 403; utilizador desativado deixa de autenticar.
 - [x] T034 [P] [US2] Componentes genéricos data-table + form em `apps/web/components/admin/`
 - [x] T035 [US2] Páginas CRUD por entidade (list/create/edit) em `apps/web/app/admin/[resource]/`
 - [x] T036 [US2] Modal de aviso RGPD antes de operações sobre dados pessoais em `apps/web/components/admin/`
-- [ ] T036b [US2] Disponibilizar no painel a **eliminação RGPD efetiva** (remoção/anonimização irreversível, reutilizando o fluxo da Feature 001), distinta e claramente rotulada face ao soft-delete reversível (FR-012a), em `apps/web/app/admin/[resource]/` (users)
+- [x] T036b [US2] Disponibilizar no painel a **eliminação RGPD efetiva** (remoção/anonimização irreversível, reutilizando o fluxo da Feature 001), distinta e claramente rotulada face ao soft-delete reversível (FR-012a), em `apps/web/app/admin/[resource]/` (users)
 
 **Checkpoint**: Backoffice operacional e independente; US-01 e US-02 funcionam.
 

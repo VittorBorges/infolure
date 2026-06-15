@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { setActiveAction, softDeleteAction, restoreAction, setIndexableAction } from '../../lib/admin-actions';
+import { setActiveAction, softDeleteAction, restoreAction, setIndexableAction, eraseUserAction } from '../../lib/admin-actions';
 
 interface Props {
   resource: string;
@@ -63,11 +63,15 @@ export function RowActions({ resource, id, isActive, deleted, personal, indexabl
 
       {confirmDelete && (
         <div style={{ marginTop: '0.4rem', padding: '0.5rem', border: '1px solid #e0b400', background: '#fffbe6', borderRadius: 4, fontSize: '0.78rem' }}>
-          <strong>Aviso RGPD:</strong> este registo contém dados pessoais. Esta eliminação é
-          <em> reversível</em> (soft-delete) — não cumpre o direito ao esquecimento. Para remoção
-          efetiva/anonimização, usar o fluxo RGPD dedicado.
+          <strong>Aviso RGPD:</strong> este registo contém dados pessoais. O <em>soft-delete</em> é
+          reversível e não cumpre o direito ao esquecimento; a <em>eliminação RGPD</em> anonimiza a
+          PII e revoga o acesso de forma irreversível.
           <div style={{ marginTop: '0.4rem' }}>
-            <button style={btn} disabled={pending} onClick={() => run(() => softDeleteAction(resource, id))}>Confirmar</button>
+            <button style={btn} disabled={pending} onClick={() => run(() => softDeleteAction(resource, id))}>Soft-delete (reversível)</button>
+            {resource === 'users' && (
+              <button style={{ ...btn, borderColor: '#a00', color: '#a00' }} disabled={pending}
+                onClick={() => run(() => eraseUserAction(id))}>Eliminar RGPD (irreversível)</button>
+            )}
             <button style={btn} onClick={() => setConfirmDelete(false)}>Cancelar</button>
           </div>
         </div>

@@ -46,15 +46,27 @@ public class ProfileService(AppDbContext db, UserResolver users, ILogger<Profile
         return true;
     }
 
-    /// <summary>RGPD: soft-delete (deleted_at), anonimiza PII e (stub) envia email de confirmação.</summary>
+    /// <summary>RGPD (self-service): erasure efetiva da própria conta.</summary>
     public async Task<bool> DeleteAccountAsync(string sub, CancellationToken ct = default)
     {
         var userId = await users.ResolveUserIdAsync(sub, ct);
         if (userId is null) return false;
-        var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
+        return await EraseUserAsync(userId.Value, "self", ct);
+    }
 
-        var email = user.Email;
-        user.DeletedAt = DateTimeOffset.UtcNow;
+    /// <summary>
+    /// RGPD: erasure efetiva e IRREVERSÍVEL de um utilizador (FR-012a) — anonimiza PII
+    /// (email/nome/avatar), remove os vínculos de autenticação (revoga acesso) e marca eliminado.
+    /// Distinta do soft-delete reversível do painel. Reutilizada pelo self-service e pelo admin.
+    /// </summary>
+    public async Task<bool> EraseUserAsync(Guid userId, string initiatedBy, CancellationToken ct = default)
+    {
+        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return false;
+
+        var hadEmail = user.Email is not null;
+        user.DeletedAt ??= DateTimeOffset.UtcNow;
+        user.IsActive = false;
         user.Email = null;
         user.DisplayName = null;
         user.AvatarUrl = null;
@@ -63,8 +75,8 @@ public class ProfileService(AppDbContext db, UserResolver users, ILogger<Profile
         await db.SaveChangesAsync(ct);
 
         // TODO(email): integrar serviço de email. Sem SMTP configurado, apenas regista a intenção.
-        logger.LogInformation("RGPD: conta {UserId} apagada; email de confirmação a enviar para {HasEmail}.",
-            userId, email is not null);
+        logger.LogInformation("RGPD: conta {UserId} anonimizada ({InitiatedBy}); confirmação por email: {HasEmail}.",
+            userId, initiatedBy, hadEmail);
         return true;
     }
 }

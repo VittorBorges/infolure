@@ -30,6 +30,13 @@ export async function restoreAction(resource: string, id: string): Promise<Admin
   return r;
 }
 
+// T036b / FR-012a: eliminação RGPD efetiva e irreversível de um utilizador.
+export async function eraseUserAction(id: string): Promise<AdminResult<void>> {
+  const r = await adminFetch<void>(`/v1/admin/users/${id}/erase`, { method: 'POST' });
+  revalidatePath('/admin/users');
+  return r;
+}
+
 // US-03 (T046): indexabilidade SEO por isca.
 export async function setIndexableAction(id: string, isIndexable: boolean): Promise<AdminResult<void>> {
   const r = await adminFetch<void>(`/v1/admin/lures/${id}/indexable`, {

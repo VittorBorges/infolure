@@ -20,6 +20,7 @@ public class AdminController(
     AdminResourceService resources,
     DashboardService dashboard,
     Infolure.Api.Features.Seo.SeoSettingsService seo,
+    Infolure.Api.Features.Users.ProfileService profiles,
     IAdminActionContext adminCtx,
     IServiceProvider sp) : ControllerBase
 {
@@ -255,6 +256,18 @@ public class AdminController(
     {
         var summary = await prices.AddPriceAsync(id, body, ct);
         return summary is null ? NotFound() : Ok(summary);
+    }
+
+    // ---- Eliminação RGPD efetiva (FR-012a / T036b) ----
+    // Distinta do soft-delete: anonimiza PII e remove vínculos de auth de forma IRREVERSÍVEL.
+    [HttpPost("users/{id:guid}/erase")]
+    public async Task<IActionResult> EraseUser(Guid id, CancellationToken ct)
+    {
+        if (Guard(id) is { } g) return g; // não a própria conta nem o último admin
+        var ok = await profiles.EraseUserAsync(id, "admin", ct);
+        if (!ok) return NotFound();
+        await AfterMutation("users", id, ct); // invalida cache de estado
+        return NoContent();
     }
 
     // ---- Controlo de indexação (US-03 / FR-014) ----

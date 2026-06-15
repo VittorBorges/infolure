@@ -180,6 +180,20 @@ paths:
         "204": { description: Atualizado (cache invalidado; reflete < 60s, SC-005) }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /admin/users/{id}/erase:
+    post:
+      tags: [admin-crud]
+      summary: Eliminação RGPD efetiva e IRREVERSÍVEL (FR-012a) — anonimiza PII e revoga acesso.
+      description: Distinta do soft-delete (DELETE). Anonimiza email/nome/avatar, remove vínculos de auth e marca eliminado.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Conta anonimizada }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: Bloqueado (própria conta / último admin) — FR-013 }
+
   /admin/lures/{id}/indexable:
     put:
       tags: [admin-crud, seo]
