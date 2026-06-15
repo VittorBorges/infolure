@@ -1,4 +1,5 @@
 using Infolure.Api.Infrastructure.Persistence;
+using Infolure.Api.Infrastructure.Persistence.Auditing;
 using Infolure.Api.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -82,6 +83,12 @@ public static class Seeder
         db.Brands.AddRange(brands);
         db.Species.AddRange(species);
         db.Lures.AddRange(lures);
+
+        // F002 (T019): dados de seed têm origem 'automation' (todas as entidades auditáveis novas).
+        foreach (var entry in db.ChangeTracker.Entries<IAuditable>())
+            if (entry.State == EntityState.Added)
+                entry.Entity.Source = AuditSource.Automation;
+
         await db.SaveChangesAsync(ct);
     }
 }

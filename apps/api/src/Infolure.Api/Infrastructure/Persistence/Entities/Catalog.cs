@@ -1,42 +1,61 @@
+using Infolure.Api.Infrastructure.Persistence.Auditing;
+
 namespace Infolure.Api.Infrastructure.Persistence.Entities;
 
 // Domínio de catálogo — espelha data-model.md (dialeto PostgreSQL, naming snake_case).
+// Feature 002: todas as entidades implementam IAuditable (IsActive/Source/DeletedAt).
 
-public class Brand
+public class Brand : ISoftDeletable
 {
     public Guid Id { get; set; }
     public string Slug { get; set; } = null!;
     public ICollection<BrandTranslation> Translations { get; set; } = new List<BrandTranslation>();
     public ICollection<Lure> Lures { get; set; } = new List<Lure>();
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class BrandTranslation
+public class BrandTranslation : IAuditable
 {
     public Guid BrandId { get; set; }
     public string Locale { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
     public Brand Brand { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class Species
+public class Species : ISoftDeletable
 {
     public Guid Id { get; set; }
     public string Slug { get; set; } = null!;
     public string? Family { get; set; }
     public string? WaterType { get; set; } // freshwater | saltwater | both
     public ICollection<SpeciesTranslation> Translations { get; set; } = new List<SpeciesTranslation>();
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class SpeciesTranslation
+public class SpeciesTranslation : IAuditable
 {
     public Guid SpeciesId { get; set; }
     public string Locale { get; set; } = null!;
     public string CommonName { get; set; } = null!;
     public Species Species { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class Lure
+public class Lure : ISoftDeletable
 {
     public Guid Id { get; set; }
     public string Slug { get; set; } = null!;
@@ -57,7 +76,8 @@ public class Lure
     public decimal? Price6mMaxEur { get; set; }
     public decimal? Price6mAvgEur { get; set; }
     public DateTimeOffset? Price6mUpdatedAt { get; set; }
-    public string Status { get; set; } = "draft"; // draft | published | archived
+    public string Status { get; set; } = "draft"; // draft | published | archived (editorial)
+    public bool IsIndexable { get; set; } = true;  // Feature 002 — indexabilidade SEO por isca (US-03)
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
@@ -67,18 +87,26 @@ public class Lure
     public ICollection<LureImage> Images { get; set; } = new List<LureImage>();
     public ICollection<LureTargetSpecies> TargetSpecies { get; set; } = new List<LureTargetSpecies>();
     public ICollection<LureRetailerPrice> RetailerPrices { get; set; } = new List<LureRetailerPrice>();
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class LureTranslation
+public class LureTranslation : IAuditable
 {
     public Guid LureId { get; set; }
     public string Locale { get; set; } = null!;
     public string Name { get; set; } = null!;
     public string? Description { get; set; }
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class LureColor
+public class LureColor : IAuditable
 {
     public Guid Id { get; set; }
     public Guid LureId { get; set; }
@@ -88,9 +116,13 @@ public class LureColor
     public string? HexSecondary { get; set; }
     public string? Pattern { get; set; }
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class LureImage
+public class LureImage : IAuditable
 {
     public Guid Id { get; set; }
     public Guid LureId { get; set; }
@@ -99,18 +131,26 @@ public class LureImage
     public short SortOrder { get; set; }
     public bool IsPrimary { get; set; }
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class LureTargetSpecies
+public class LureTargetSpecies : IAuditable
 {
     public Guid LureId { get; set; }
     public Guid SpeciesId { get; set; }
     public string? Confidence { get; set; } // primary | secondary
     public Lure Lure { get; set; } = null!;
     public Species Species { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class LureRetailerPrice
+public class LureRetailerPrice : IAuditable
 {
     public Guid Id { get; set; }
     public Guid LureId { get; set; }
@@ -120,4 +160,8 @@ public class LureRetailerPrice
     public bool InStock { get; set; } = true;
     public DateTimeOffset UpdatedAt { get; set; }
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "gen:api-types": "openapi-typescript ../../specs/001-lure-catalog-mvp/contracts/api.yaml -o lib/api-types.ts",
+    "gen:admin-api-types": "openapi-typescript ../../specs/002-admin-indexing-audit/contracts/admin-api.yaml -o lib/admin-api-types.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

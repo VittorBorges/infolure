@@ -1,3 +1,4 @@
+using Infolure.Api.Infrastructure.Persistence.Auditing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infolure.Api.Infrastructure.Persistence;
@@ -9,9 +10,13 @@ public static class PersistenceExtensions
         var connectionString = config.GetConnectionString("Postgres")
             ?? "Host=localhost;Port=5432;Database=infolure;Username=postgres;Password=dev";
 
-        services.AddDbContext<AppDbContext>(options =>
+        // Feature 002: interceptor de soft-delete/auditável (T006).
+        services.AddSingleton<AuditSaveChangesInterceptor>();
+
+        services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseNpgsql(connectionString)
-                   .UseSnakeCaseNamingConvention());
+                   .UseSnakeCaseNamingConvention()
+                   .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>()));
 
         return services;
     }

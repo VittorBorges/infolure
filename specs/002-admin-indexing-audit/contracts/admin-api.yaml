@@ -1,0 +1,303 @@
+openapi: 3.1.0
+info:
+  title: Infolure Admin & SEO API (Feature 002)
+  version: "1.0.0"
+  description: >
+    Endpoints de administração (/v1/admin/*) e de controlo de indexação (/v1/seo).
+    Aditivo ao contrato da Feature 001 (contracts/api.yaml). Todos os /v1/admin/*
+    exigem role admin (verificada na BD). Convenções de paginação/filtro partilhadas.
+    NOTA (I1/M1): os caminhos /admin/{resource} descrevem um padrão uniforme assente numa
+    base partilhada, mas os recursos com efeitos colaterais de domínio têm handlers
+    dedicados sob o mesmo padrão de rota — `lures` (reindex Typesense), `lure-retailer-prices`
+    (recálculo de price_6m_*) e `reviews` (moderação via endpoint dedicado, EXCLUÍDO do PATCH
+    genérico). A auditoria de todas as escritas admin é automática (AdminAuditInterceptor),
+    não depende de cada endpoint.
+
+servers:
+  - url: /v1
+
+tags:
+  - name: admin-dashboard
+  - name: admin-crud
+  - name: admin-audit
+  - name: seo
+
+paths:
+  /admin/dashboard:
+    get:
+      tags: [admin-dashboard]
+      summary: Métricas de cadastros e estados (US-02 / FR-008)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dashboard" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/{resource}:
+    parameters:
+      - $ref: "#/components/parameters/Resource"
+    get:
+      tags: [admin-crud]
+      summary: Listar registos de uma entidade (filtrável, paginável, FR-010)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: Pesquisa textual }
+        - { name: is_active, in: query, schema: { type: boolean } }
+        - { name: source, in: query, schema: { type: string, enum: [manual, automation, import] } }
+        - name: include
+          in: query
+          description: Incluir registos inativos/eliminados (default exclui eliminados)
+          schema: { type: string, enum: [default, inactive, deleted, all] }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminList" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin-crud]
+      summary: Criar registo (source=manual; FR-009)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses:
+        "201": { $ref: "#/components/responses/Created" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /admin/{resource}/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Resource"
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [admin-crud]
+      summary: Obter um registo (inclui inativos/eliminados)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [admin-crud]
+      summary: Editar um registo (FR-009)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses:
+        "204": { description: Atualizado }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [admin-crud]
+      summary: Soft-delete reversível (NÃO é eliminação RGPD; FR-012a)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Eliminado (reversível) }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Bloqueado (ex.: último admin, pai referenciado, auto-eliminação) — FR-013
+
+  /admin/{resource}/{id}/restore:
+    parameters:
+      - $ref: "#/components/parameters/Resource"
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [admin-crud]
+      summary: Restaurar registo eliminado, repondo o is_active anterior (FR-004)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Restaurado }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/{resource}/{id}/active:
+    parameters:
+      - $ref: "#/components/parameters/Resource"
+      - { name: id, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [admin-crud]
+      summary: Ativar/desativar (toggle). Para users, afeta autenticação (FR-013a)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [is_active], properties: { is_active: { type: boolean } } }
+      responses:
+        "204": { description: Estado alterado }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Bloqueado (ex.: desativar o último admin / própria conta) — FR-013 }
+
+  /admin/audit:
+    get:
+      tags: [admin-audit]
+      summary: Consultar histórico de auditoria (FR-021)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: actor, in: query, schema: { type: string, format: uuid } }
+        - name: action
+          in: query
+          schema: { type: string, enum: [create, update, activate, deactivate, delete, restore, moderate, settings_update] }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AuditEntry" } }
+                  meta: { $ref: "#/components/schemas/PageMeta" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/settings/indexing:
+    put:
+      tags: [admin-crud, seo]
+      summary: Ligar/desligar a indexação global (US-03 / FR-014)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties: { enabled: { type: boolean } }
+      responses:
+        "204": { description: Atualizado (cache invalidado; reflete < 60s, SC-005) }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /seo:
+    get:
+      tags: [seo]
+      summary: Estado de indexação para robots.ts/sitemap.ts (público, cacheado)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  indexing_enabled: { type: boolean }
+                  sitemap:
+                    type: array
+                    description: Slugs de iscas elegíveis (published+active+não-eliminado+indexable) quando ligado; vazio quando desligado
+                    items:
+                      type: object
+                      properties:
+                        slug: { type: string }
+                        updated_at: { type: string, format: date-time }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    Resource:
+      name: resource
+      in: path
+      required: true
+      description: Nome da entidade gerível
+      schema:
+        type: string
+        enum:
+          [brands, species, lures, lure-translations, lure-colors, lure-images,
+           lure-target-species, lure-retailer-prices, users, user-auth-providers,
+           favorites, inventory, reviews]
+
+  responses:
+    Created:
+      description: Criado
+      content: { application/json: { schema: { type: object, properties: { id: { type: string } } } } }
+    Forbidden: { description: Sem permissão (não-admin) — FR-007 }
+    NotFound: { description: Não encontrado }
+    Unprocessable: { description: Validação falhou }
+
+  schemas:
+    PageMeta:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+
+    Auditable:
+      type: object
+      properties:
+        is_active: { type: boolean }
+        source: { type: string, enum: [manual, automation, import] }
+        deleted_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AdminList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            allOf:
+              - { $ref: "#/components/schemas/Auditable" }
+              - type: object
+                additionalProperties: true
+        meta: { $ref: "#/components/schemas/PageMeta" }
+
+    AuditEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        actor_user_id: { type: [string, "null"], format: uuid }
+        action: { type: string }
+        entity_type: { type: string }
+        entity_id: { type: string }
+        is_personal_data: { type: boolean }
+        changes:
+          type: [object, "null"]
+          description: Instantâneo {before, after} — só para dados pessoais (FR-020a)
+        created_at: { type: string, format: date-time }
+
+    Dashboard:
+      type: object
+      description: Métricas do dashboard (FR-008)
+      properties:
+        users:
+          type: object
+          properties:
+            total: { type: integer }
+            new_7d: { type: integer }
+            new_30d: { type: integer }
+            series:
+              type: array
+              description: Novos cadastros por dia (recorte 30d)
+              items:
+                type: object
+                properties:
+                  date: { type: string, format: date }
+                  count: { type: integer }
+        lures:
+          type: object
+          properties:
+            by_status: { type: object, additionalProperties: { type: integer } }
+            by_source: { type: object, additionalProperties: { type: integer } }
+            active: { type: integer }
+            inactive: { type: integer }
+        reviews:
+          type: object
+          properties:
+            pending: { type: integer }
+        favorites: { type: object, properties: { total: { type: integer } } }
+        inventory: { type: object, properties: { total: { type: integer } } }

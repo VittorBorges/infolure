@@ -12,10 +12,16 @@ test('lista o catálogo e mostra cards de iscas', async ({ page }) => {
 
 test('filtrar por tipo atualiza a URL e os resultados', async ({ page }) => {
   await page.goto('/iscas');
-  // Marca o primeiro filtro de tipo disponível
+  // O checkbox é controlado pela URL (onChange faz router.push). Usamos click() em vez de
+  // check(): após a navegação o nó é re-renderizado e check() falharia ao validar o estado
+  // pós-clique no elemento antigo.
   const firstType = page.locator('fieldset', { hasText: 'Tipo' }).locator('input[type=checkbox]').first();
-  await firstType.check();
+  await firstType.click();
   await expect(page).toHaveURL(/lure_type=/);
+  // Os resultados refletem o filtro: exatamente um tipo fica marcado após o re-render.
+  await expect(
+    page.locator('fieldset', { hasText: 'Tipo' }).locator('input[type=checkbox]:checked'),
+  ).toHaveCount(1);
 });
 
 test('estado vazio mostra CTA limpar filtros', async ({ page }) => {

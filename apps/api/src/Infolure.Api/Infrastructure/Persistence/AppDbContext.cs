@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+using Infolure.Api.Infrastructure.Persistence.Auditing;
 using Infolure.Api.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +28,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Content
     public DbSet<LureReview> LureReviews => Set<LureReview>();
     public DbSet<ReviewHelpfulVote> ReviewHelpfulVotes => Set<ReviewHelpfulVote>();
+
+    // Admin / configuração (Feature 002)
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<AdminAuditEntry> AdminAuditLog => Set<AdminAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -63,6 +69,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.Status);
             e.Property(x => x.Attributes).HasColumnType("jsonb").HasDefaultValueSql("'{}'");
             e.Property(x => x.Status).HasDefaultValue("draft");
+            e.Property(x => x.IsIndexable).HasDefaultValue(true);  // Feature 002 (US-03)
             e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
             e.ToTable(t =>
@@ -193,5 +200,49 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.User).WithMany()
                 .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
+
+        // ---- Admin / configuração (Feature 002) ----
+        b.Entity<AppSetting>(e =>
+        {
+            e.ToTable("app_settings", t => t.HasCheckConstraint("ck_app_settings_singleton", "id = 1"));
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.SeoIndexingEnabled).HasDefaultValue(true);
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
+        });
+
+        b.Entity<AdminAuditEntry>(e =>
+        {
+            e.ToTable("admin_audit_log", t => t.HasCheckConstraint("ck_audit_action",
+                "action IN ('create','update','activate','deactivate','delete','restore','moderate','settings_update')"));
+            e.Property(x => x.Changes).HasColumnType("jsonb");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+            e.HasIndex(x => new { x.ActorUserId, x.CreatedAt });
+            e.HasIndex(x => new { x.EntityType, x.EntityId });
+            e.HasIndex(x => new { x.Action, x.CreatedAt });
+        });
+
+        // ---- Base auditável por convenção (Feature 002, T007) ----
+        // Para toda entidade IAuditable: defaults de IsActive/Source, check de Source,
+        // e global query filter (DeletedAt == null) que oculta soft-deletes de todas as queries.
+        foreach (var et in b.Model.GetEntityTypes())
+        {
+            if (!typeof(IAuditable).IsAssignableFrom(et.ClrType)) continue;
+
+            var entity = b.Entity(et.ClrType);
+            entity.Property(nameof(IAuditable.IsActive)).HasDefaultValue(true);
+            entity.Property(nameof(IAuditable.Source)).HasDefaultValue(AuditSource.Manual);
+
+            var table = et.GetTableName();
+            if (table is not null)
+                entity.ToTable(t => t.HasCheckConstraint(
+                    $"ck_{table}_source", "source IN ('manual','automation','import')"));
+
+            // e => e.DeletedAt == null
+            var p = Expression.Parameter(et.ClrType, "e");
+            var body = Expression.Equal(
+                Expression.Property(p, nameof(IAuditable.DeletedAt)),
+                Expression.Constant(null, typeof(DateTimeOffset?)));
+            entity.HasQueryFilter(Expression.Lambda(body, p));
+        }
     }
 }

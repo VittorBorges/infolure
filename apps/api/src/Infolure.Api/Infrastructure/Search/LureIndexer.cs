@@ -17,9 +17,15 @@ public class LureIndexer(AppDbContext db, ITypesenseClient typesense)
             .Include(l => l.TargetSpecies).ThenInclude(ts => ts.Species)
             .AsNoTracking();
 
+    // Elegibilidade pública para indexação (F002 US-01): publicada + ativa + marca-pai ativa.
+    // DeletedAt é tratado pelo global query filter (linhas soft-deleted não aparecem em db.Lures).
+    private IQueryable<Persistence.Entities.Lure> EligibleForIndex(IQueryable<Persistence.Entities.Lure> q)
+        => q.Where(l => l.Status == "published" && l.IsActive)
+            .Where(l => l.BrandId == null || db.Brands.Any(b => b.Id == l.BrandId && b.IsActive));
+
     public async Task<int> ReindexAllAsync(CancellationToken ct = default)
     {
-        var lures = await WithGraph(db.Lures.Where(l => l.Status == "published")).ToListAsync(ct);
+        var lures = await WithGraph(EligibleForIndex(db.Lures)).ToListAsync(ct);
         if (lures.Count == 0) return 0;
 
         var docs = new List<LureSearchDocument>();
@@ -30,15 +36,36 @@ public class LureIndexer(AppDbContext db, ITypesenseClient typesense)
         return docs.Count;
     }
 
-    /// <summary>Reindexa uma única isca (write-through após mudança de favoritos/inventário — T057).</summary>
+    /// <summary>
+    /// Reindexa uma única isca write-through. Se a isca deixou de ser elegível (despublicada,
+    /// inativa, eliminada ou marca-pai inativa), é REMOVIDA do índice (F002 US-01 / FR-011).
+    /// </summary>
     public async Task ReindexLureAsync(Guid lureId, CancellationToken ct = default)
     {
-        var lure = await WithGraph(db.Lures.Where(l => l.Id == lureId && l.Status == "published"))
+        var lure = await WithGraph(EligibleForIndex(db.Lures.Where(l => l.Id == lureId)))
             .FirstOrDefaultAsync(ct);
-        if (lure is null) return;
+
+        if (lure is null)
+        {
+            await RemoveLureAsync(lureId, ct);
+            return;
+        }
 
         var doc = await BuildDocAsync(lure, ct);
         await typesense.ImportDocuments(TypesenseExtensions.CollectionName, [doc], 1, ImportType.Upsert);
+    }
+
+    /// <summary>Remove uma isca do índice de busca (best-effort; ignora ausência).</summary>
+    public async Task RemoveLureAsync(Guid lureId, CancellationToken ct = default)
+    {
+        try
+        {
+            await typesense.DeleteDocument<LureSearchDocument>(TypesenseExtensions.CollectionName, lureId.ToString());
+        }
+        catch
+        {
+            // documento inexistente no índice — nada a remover
+        }
     }
 
     private async Task<LureSearchDocument> BuildDocAsync(Persistence.Entities.Lure l, CancellationToken ct)

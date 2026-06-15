@@ -1,8 +1,11 @@
+using Infolure.Api.Infrastructure.Persistence.Auditing;
+
 namespace Infolure.Api.Infrastructure.Persistence.Entities;
 
 // Domínio de utilizador — espelha data-model.md.
+// Feature 002: IAuditable em todas. User.DeletedAt já existia (RGPD) e é reutilizado.
 
-public class User
+public class User : IAuditable
 {
     public Guid Id { get; set; }
     public string? Email { get; set; }
@@ -13,14 +16,17 @@ public class User
     public string Role { get; set; } = "user"; // user | admin
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? LastLoginAt { get; set; }
-    public DateTimeOffset? DeletedAt { get; set; } // RGPD soft-delete (forward-compat)
+    public DateTimeOffset? DeletedAt { get; set; } // soft-delete reversível (Feature 002) / RGPD forward-compat
 
     public ICollection<UserAuthProvider> AuthProviders { get; set; } = new List<UserAuthProvider>();
     public ICollection<UserLureFavorite> Favorites { get; set; } = new List<UserLureFavorite>();
     public ICollection<UserLureInventory> Inventory { get; set; } = new List<UserLureInventory>();
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
 }
 
-public class UserAuthProvider
+public class UserAuthProvider : IAuditable
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
@@ -29,18 +35,26 @@ public class UserAuthProvider
     public string? Email { get; set; }
     public DateTimeOffset LinkedAt { get; set; }
     public User User { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class UserLureFavorite
+public class UserLureFavorite : IAuditable
 {
     public Guid UserId { get; set; }
     public Guid LureId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public User User { get; set; } = null!;
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
-public class UserLureInventory
+public class UserLureInventory : IAuditable
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
@@ -52,4 +66,8 @@ public class UserLureInventory
     public DateTimeOffset AddedAt { get; set; }
     public User User { get; set; } = null!;
     public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
 }

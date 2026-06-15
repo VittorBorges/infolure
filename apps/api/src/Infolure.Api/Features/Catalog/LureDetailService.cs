@@ -12,8 +12,12 @@ public class LureDetailService(AppDbContext db)
 {
     public async Task<LureDetailDto?> GetBySlugAsync(string slug, string locale, CancellationToken ct = default)
     {
+        // Visibilidade pública (F002 US-01): publicada + ativa (DeletedAt tratado pelo global query
+        // filter) + marca-pai ativa/não-eliminada (FR-003a). A espécie é relação fraca (FR-003b) →
+        // não condiciona a visibilidade da isca, apenas é filtrada na projeção abaixo.
         var lure = await db.Lures
-            .Where(l => l.Slug == slug && l.Status == "published")
+            .Where(l => l.Slug == slug && l.Status == "published" && l.IsActive)
+            .Where(l => l.BrandId == null || db.Brands.Any(b => b.Id == l.BrandId && b.IsActive))
             .Include(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(l => l.Translations)
             .Include(l => l.Colors)
@@ -24,6 +28,9 @@ public class LureDetailService(AppDbContext db)
             .FirstOrDefaultAsync(ct);
 
         if (lure is null) return null;
+
+        // FR-003b: descartar espécies-alvo inativas (eliminadas já saem pelo global query filter).
+        var targetSpecies = lure.TargetSpecies.Where(ts => ts.Species is { IsActive: true }).ToList();
 
         var favoritesCount = await db.UserLureFavorites.CountAsync(f => f.LureId == lure.Id, ct);
         var reviews = await db.LureReviews
@@ -60,7 +67,7 @@ public class LureDetailService(AppDbContext db)
             WeightG: lure.WeightG,
             PrimaryImageUrl: primaryImage?.Url,
             PrimaryColorHex: lure.Colors.FirstOrDefault()?.HexPrimary,
-            TargetSpecies: lure.TargetSpecies.Select(ts => ts.Species.Slug).ToArray(),
+            TargetSpecies: targetSpecies.Select(ts => ts.Species.Slug).ToArray(),
             PriceAvgEur: lure.Price6mAvgEur,
             FavoritesCount: favoritesCount,
             IsFavorited: null,
@@ -76,7 +83,7 @@ public class LureDetailService(AppDbContext db)
                 new LureColorDto(c.Id, c.NamePt, c.HexPrimary, c.HexSecondary, c.Pattern)).ToList(),
             Images: lure.Images.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder)
                 .Select(i => new LureImageDto(i.Url, i.ColorId, i.IsPrimary)).ToList(),
-            TargetSpeciesDetail: lure.TargetSpecies.Select(ts => new TargetSpeciesDto(
+            TargetSpeciesDetail: targetSpecies.Select(ts => new TargetSpeciesDto(
                 ts.Species.Slug,
                 Tr(ts.Species.Translations, locale) ?? ts.Species.Slug,
                 ts.Confidence)).ToList(),

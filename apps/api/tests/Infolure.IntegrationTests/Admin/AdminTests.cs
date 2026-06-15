@@ -20,10 +20,30 @@ public class AdminTests(AuthenticatedApiFactory factory) : IClassFixture<Authent
     };
     private readonly AuthenticatedApiFactory _factory = factory;
 
+    private const string AdminSub = "test-admin-sub-0001";
+
+    // F002 (T011): a role admin é agora a da BD (fonte de verdade), não um claim injetado.
+    // Garante um utilizador admin associado a AdminSub e usa esse sub no cliente.
     private HttpClient Admin()
     {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var exists = db.UserAuthProviders.IgnoreQueryFilters().Any(p => p.ProviderUid == AdminSub);
+            if (!exists)
+            {
+                var u = new User { Id = Guid.NewGuid(), Username = "admin_tester", Role = "admin" };
+                u.AuthProviders.Add(new UserAuthProvider
+                {
+                    Id = Guid.NewGuid(), Provider = "test", ProviderUid = AdminSub,
+                });
+                db.Users.Add(u);
+                db.SaveChanges();
+            }
+        }
+
         var c = _factory.CreateClient();
-        c.DefaultRequestHeaders.Add("X-Test-Role", "admin");
+        c.DefaultRequestHeaders.Add("X-Test-Sub", AdminSub);
         return c;
     }
 

@@ -70,6 +70,7 @@ app.UseHttpsRedirection();          // T015 — HTTPS forçado
 
 app.UseRateLimiter();               // T012
 app.UseAuthentication();            // T011
+app.UseMiddleware<Infolure.Api.Infrastructure.Auth.ActiveUserMiddleware>(); // F002 T011 — bloqueia inativo/eliminado + role da BD
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
