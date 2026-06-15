@@ -169,10 +169,10 @@ correspondentes; UI permite filtrar.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T050 [P] Executar a validação completa do [quickstart.md](quickstart.md) (15 cenários)
-- [ ] T051 [P] Verificar logs estruturados sem PII e que snapshots de dados pessoais só vivem no `admin_audit_log` (Princípio II)
-- [ ] T052 Correr a suite completa (`dotnet test` + `npx playwright test`) e confirmar verde, incluindo regressão da 001 (SC-009)
-- [ ] T053 [P] Atualizar contrato/docs se a implementação divergir de `contracts/admin-api.yaml`
+- [x] T050 [P] Executar a validação completa do [quickstart.md](quickstart.md) (15 cenários)
+- [x] T051 [P] Verificar logs estruturados sem PII e que snapshots de dados pessoais só vivem no `admin_audit_log` (Princípio II)
+- [x] T052 Correr a suite completa (`dotnet test` + `npx playwright test`) e confirmar verde, incluindo regressão da 001 (SC-009)
+- [x] T053 [P] Atualizar contrato/docs se a implementação divergir de `contracts/admin-api.yaml`
 
 ---
 

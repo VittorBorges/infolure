@@ -180,6 +180,26 @@ paths:
         "204": { description: Atualizado (cache invalidado; reflete < 60s, SC-005) }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /admin/lures/{id}/indexable:
+    put:
+      tags: [admin-crud, seo]
+      summary: Indexabilidade SEO por isca (US-03 / FR-015). Só afeta sitemap/meta, não a busca.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [is_indexable]
+              properties: { is_indexable: { type: boolean } }
+      responses:
+        "204": { description: Atualizado }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /seo:
     get:
       tags: [seo]
