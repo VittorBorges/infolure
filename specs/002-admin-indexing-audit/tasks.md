@@ -130,7 +130,7 @@ robots/sitemap/metadata; perfis sempre noindex.
 ### Tests for User Story 3
 
 - [x] T037 [P] [US3] Teste de integração: `PUT /v1/admin/settings/indexing` invalida cache; `GET /v1/seo` reflete; sitemap só lista elegíveis em `apps/api/tests/Infolure.IntegrationTests/Seo/IndexingToggleTests.cs`
-- [ ] T038 [P] [US3] Teste E2E: toggle OFF → robots disallow + sitemap vazio + detalhe noindex; perfis sempre noindex em `apps/web/tests/e2e/indexing.spec.ts`
+- [x] T038 [P] [US3] Teste E2E: toggle OFF → robots disallow + sitemap vazio + detalhe noindex; perfis sempre noindex em `apps/web/tests/e2e/indexing.spec.ts`
 
 ### Implementation for User Story 3
 
