@@ -1,4 +1,6 @@
 import { adminFetch } from '../../lib/admin';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,11 +12,38 @@ interface Dashboard {
   inventory: { total: number };
 }
 
-function Card({ title, value }: { title: string; value: React.ReactNode }) {
+function Metric({ title, value }: { title: string; value: React.ReactNode }) {
   return (
-    <div style={{ border: '1px solid #eee', borderRadius: 8, padding: '1rem', minWidth: 140 }}>
-      <div style={{ fontSize: '0.8rem', color: '#666' }}>{title}</div>
-      <div style={{ fontSize: '1.6rem', fontWeight: 600 }}>{value}</div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-semibold tracking-tight">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
+    </section>
+  );
+}
+
+function Breakdown({ data }: { data: Record<string, number> }) {
+  const entries = Object.entries(data);
+  if (entries.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {entries.map(([k, v]) => (
+        <Badge key={k} variant="muted">
+          {k}: {v}
+        </Badge>
+      ))}
     </div>
   );
 }
@@ -22,51 +51,59 @@ function Card({ title, value }: { title: string; value: React.ReactNode }) {
 export default async function AdminDashboardPage() {
   const r = await adminFetch<Dashboard>('/v1/admin/dashboard');
   if (!r.ok) {
-    const msg = r.status === 403 ? 'Sem acesso — é necessária a função de administrador.'
-      : 'Não foi possível carregar o dashboard.';
-    return <p style={{ color: '#a00' }}>{msg}</p>;
+    const msg =
+      r.status === 403
+        ? 'Sem acesso — é necessária a função de administrador.'
+        : 'Não foi possível carregar o dashboard.';
+    return (
+      <Card className="border-destructive/40">
+        <CardContent className="pt-6 text-sm text-destructive">{msg}</CardContent>
+      </Card>
+    );
   }
   const d = r.data;
 
   return (
-    <div style={{ display: 'grid', gap: '1.5rem' }}>
-      <h1>Dashboard</h1>
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">Visão geral do catálogo e da comunidade.</p>
+      </header>
 
-      <section>
-        <h2 style={{ fontSize: '1rem' }}>Cadastros de utilizadores</h2>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Card title="Total" value={d.users.total} />
-          <Card title="Novos (7d)" value={d.users.new_7d} />
-          <Card title="Novos (30d)" value={d.users.new_30d} />
-        </div>
-      </section>
+      <Section title="Cadastros de utilizadores">
+        <Metric title="Total" value={d.users.total} />
+        <Metric title="Novos (7d)" value={d.users.new_7d} />
+        <Metric title="Novos (30d)" value={d.users.new_30d} />
+      </Section>
 
-      <section>
-        <h2 style={{ fontSize: '1rem' }}>Iscas</h2>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Card title="Ativas" value={d.lures.active} />
-          <Card title="Inativas" value={d.lures.inactive} />
-          <Card title="Por estado" value={
-            <span style={{ fontSize: '0.85rem', fontWeight: 400 }}>
-              {Object.entries(d.lures.by_status).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}
+      <Section title="Iscas">
+        <Metric
+          title="Ativas"
+          value={
+            <span className="flex items-center gap-2">
+              {d.lures.active}
+              <Badge variant="success">ativas</Badge>
             </span>
-          } />
-          <Card title="Por origem" value={
-            <span style={{ fontSize: '0.85rem', fontWeight: 400 }}>
-              {Object.entries(d.lures.by_source).map(([k, v]) => `${k}: ${v}`).join(' · ') || '—'}
-            </span>
-          } />
-        </div>
-      </section>
+          }
+        />
+        <Metric title="Inativas" value={d.lures.inactive} />
+        <Metric title="Por estado" value={<Breakdown data={d.lures.by_status} />} />
+        <Metric title="Por origem" value={<Breakdown data={d.lures.by_source} />} />
+      </Section>
 
-      <section>
-        <h2 style={{ fontSize: '1rem' }}>Conteúdo e coleções</h2>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Card title="Reviews por moderar" value={d.reviews.pending} />
-          <Card title="Favoritos" value={d.favorites.total} />
-          <Card title="Inventário" value={d.inventory.total} />
-        </div>
-      </section>
+      <Section title="Comunidade">
+        <Metric
+          title="Reviews pendentes"
+          value={
+            <span className="flex items-center gap-2">
+              {d.reviews.pending}
+              {d.reviews.pending > 0 && <Badge variant="secondary">moderar</Badge>}
+            </span>
+          }
+        />
+        <Metric title="Favoritos" value={d.favorites.total} />
+        <Metric title="Inventário" value={d.inventory.total} />
+      </Section>
     </div>
   );
 }

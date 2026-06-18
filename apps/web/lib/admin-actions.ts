@@ -37,6 +37,24 @@ export async function eraseUserAction(id: string): Promise<AdminResult<void>> {
   return r;
 }
 
+// Edição da isca (FR-009): o backend só aceita `status` e `weight_g` (PATCH /v1/admin/lures/{id}).
+export async function updateLureAction(
+  id: string,
+  patch: { status?: string; weight_g?: number },
+): Promise<AdminResult<void>> {
+  const body: Record<string, unknown> = {};
+  if (patch.status) body.status = patch.status;
+  if (patch.weight_g !== undefined && !Number.isNaN(patch.weight_g)) body.weight_g = patch.weight_g;
+
+  const r = await adminFetch<void>(`/v1/admin/lures/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  revalidatePath('/admin/lures');
+  return r;
+}
+
 // US-03 (T046): indexabilidade SEO por isca.
 export async function setIndexableAction(id: string, isIndexable: boolean): Promise<AdminResult<void>> {
   const r = await adminFetch<void>(`/v1/admin/lures/${id}/indexable`, {

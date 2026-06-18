@@ -2,6 +2,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { adminFetch, ADMIN_RESOURCES, PERSONAL_RESOURCES, type AdminResource, type PagedResponse } from '../../../lib/admin';
 import { RowActions } from '../../../components/admin/RowActions';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Badge } from '../../../components/ui/badge';
+import { Card } from '../../../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +16,35 @@ function isResource(r: string): r is AdminResource {
   return (ADMIN_RESOURCES as readonly string[]).includes(r);
 }
 
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return '—';
+const STATUS_VARIANT: Record<string, 'success' | 'secondary' | 'muted'> = {
+  published: 'success',
+  draft: 'secondary',
+  archived: 'muted',
+};
+
+// Renderização de cada célula com semântica de cor nos campos de estado (FR-007/SC-005).
+function renderCell(column: string, value: unknown): React.ReactNode {
+  if (column === 'is_active') {
+    return value === true ? <Badge variant="success">ativo</Badge> : <Badge variant="muted">inativo</Badge>;
+  }
+  if (column === 'deleted_at') {
+    return value != null ? <Badge variant="destructive">eliminado</Badge> : <span className="text-muted-foreground">—</span>;
+  }
+  if (column === 'is_indexable') {
+    return value === true ? <Badge variant="success">indexável</Badge> : <Badge variant="muted">não-indexável</Badge>;
+  }
+  if (column === 'status') {
+    const v = String(value ?? '');
+    return v ? <Badge variant={STATUS_VARIANT[v] ?? 'secondary'}>{v}</Badge> : <span className="text-muted-foreground">—</span>;
+  }
+  if (value === null || value === undefined) return <span className="text-muted-foreground">—</span>;
   if (typeof value === 'boolean') return value ? 'sim' : 'não';
   return String(value);
 }
 
 export default async function AdminResourcePage({
-  params, searchParams,
+  params,
+  searchParams,
 }: {
   params: Promise<{ resource: string }>;
   searchParams: Promise<SP>;
@@ -36,9 +62,10 @@ export default async function AdminResourcePage({
 
   const r = await adminFetch<PagedResponse>(`/v1/admin/${resource}?${qs.toString()}`);
   if (!r.ok) {
-    const msg = r.status === 403 ? 'Sem acesso — é necessária a função de administrador.'
-      : 'Não foi possível carregar os registos.';
-    return <p style={{ color: '#a00' }}>{msg}</p>;
+    const msg = r.status === 403 ? 'Sem acesso — é necessária a função de administrador.' : 'Não foi possível carregar os registos.';
+    return (
+      <Card className="border-destructive/40 p-6 text-sm text-destructive">{msg}</Card>
+    );
   }
 
   const { data, meta } = r.data;
@@ -54,64 +81,97 @@ export default async function AdminResourcePage({
     return `/admin/${resource}?${u.toString()}`;
   };
 
-  return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <h1 style={{ textTransform: 'capitalize' }}>{resource}</h1>
+  const editHref = (row: Record<string, unknown>) => {
+    const u = new URLSearchParams();
+    if (row.status != null) u.set('status', String(row.status));
+    if (row.name != null) u.set('name', String(row.name));
+    if (row.slug != null) u.set('slug', String(row.slug));
+    return `/admin/${resource}/${String(row.id)}?${u.toString()}`;
+  };
 
-      <form method="get" action={`/admin/${resource}`} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <input name="q" defaultValue={sp.q ?? ''} placeholder="Pesquisar…" style={{ padding: '0.3rem 0.5rem' }} />
-        <select name="include" defaultValue={sp.include ?? 'default'}>
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold capitalize tracking-tight">{resource}</h1>
+        <p className="text-sm text-muted-foreground">{meta.total} registos</p>
+      </header>
+
+      <form method="get" action={`/admin/${resource}`} className="flex flex-wrap items-center gap-2">
+        <Input name="q" defaultValue={sp.q ?? ''} placeholder="Pesquisar…" aria-label="Pesquisar registos" className="h-9 w-56" />
+        <select
+          name="include"
+          defaultValue={sp.include ?? 'default'}
+          aria-label="Filtrar por estado"
+          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <option value="default">Só ativos/vivos</option>
           <option value="inactive">Inativos</option>
           <option value="deleted">Eliminados</option>
           <option value="all">Todos</option>
         </select>
-        <button type="submit">Filtrar</button>
+        <Button type="submit">Filtrar</Button>
       </form>
 
-      <p style={{ color: '#666', fontSize: '0.85rem' }}>{meta.total} registos</p>
-
       {data.length === 0 ? (
-        <p>Sem registos.</p>
+        <Card className="p-8 text-center text-sm text-muted-foreground">Sem registos.</Card>
       ) : (
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.85rem' }}>
-          <thead>
-            <tr>
-              {columns.map((c) => (
-                <th key={c} style={{ textAlign: 'left', borderBottom: '2px solid #eee', padding: '0.4rem' }}>{c}</th>
-              ))}
-              <th style={{ textAlign: 'left', borderBottom: '2px solid #eee', padding: '0.4rem' }}>ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row) => {
-              const id = String(row.id);
-              return (
-                <tr key={id}>
-                  {columns.map((c) => (
-                    <td key={c} style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem' }}>{cell(row[c])}</td>
-                  ))}
-                  <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem' }}>
-                    <RowActions
-                      resource={resource}
-                      id={id}
-                      isActive={row.is_active === true}
-                      deleted={row.deleted_at != null}
-                      personal={personal}
-                      indexable={resource === 'lures' ? row.is_indexable === true : undefined}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map((c) => (
+                  <TableHead key={c}>{c}</TableHead>
+                ))}
+                <TableHead className="text-right">ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((row) => {
+                const id = String(row.id);
+                return (
+                  <TableRow key={id}>
+                    {columns.map((c) => (
+                      <TableCell key={c}>{renderCell(c, row[c])}</TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {resource === 'lures' && row.deleted_at == null && (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={editHref(row)}>Editar</Link>
+                          </Button>
+                        )}
+                        <RowActions
+                          resource={resource}
+                          id={id}
+                          isActive={row.is_active === true}
+                          deleted={row.deleted_at != null}
+                          personal={personal}
+                          indexable={resource === 'lures' ? row.is_indexable === true : undefined}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
-      <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {page > 1 && <Link href={pageHref(page - 1)}>← Anterior</Link>}
-        <span style={{ fontSize: '0.85rem', color: '#666' }}>Página {page} de {totalPages}</span>
-        {page < totalPages && <Link href={pageHref(page + 1)}>Seguinte →</Link>}
+      <nav className="flex items-center gap-4">
+        {page > 1 && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={pageHref(page - 1)}>← Anterior</Link>
+          </Button>
+        )}
+        <span className="text-sm text-muted-foreground">
+          Página {page} de {totalPages}
+        </span>
+        {page < totalPages && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={pageHref(page + 1)}>Seguinte →</Link>
+          </Button>
+        )}
       </nav>
     </div>
   );

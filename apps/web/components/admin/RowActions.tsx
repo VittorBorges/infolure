@@ -3,6 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { setActiveAction, softDeleteAction, restoreAction, setIndexableAction, eraseUserAction } from '../../lib/admin-actions';
+import { Button } from '../ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
 
 interface Props {
   resource: string;
@@ -13,11 +22,6 @@ interface Props {
   /** Indexabilidade SEO (apenas iscas; undefined nos restantes recursos). */
   indexable?: boolean;
 }
-
-const btn: React.CSSProperties = {
-  fontSize: '0.8rem', padding: '0.2rem 0.5rem', marginRight: '0.35rem',
-  border: '1px solid #ccc', borderRadius: 4, background: '#fff', cursor: 'pointer',
-};
 
 export function RowActions({ resource, id, isActive, deleted, personal, indexable }: Props) {
   const router = useRouter();
@@ -33,49 +37,76 @@ export function RowActions({ resource, id, isActive, deleted, personal, indexabl
         setErr(r.status === 409 ? 'Operação bloqueada (ex.: último admin / própria conta).' : `Falha (${r.status}).`);
         return;
       }
+      setConfirmDelete(false);
       router.refresh();
     });
   }
 
   if (deleted) {
     return (
-      <span>
-        <button style={btn} disabled={pending} onClick={() => run(() => restoreAction(resource, id))}>Restaurar</button>
-        {err && <em style={{ color: '#a00', fontSize: '0.75rem' }}>{err}</em>}
-      </span>
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => restoreAction(resource, id))}>
+          Restaurar
+        </Button>
+        {err && <span className="text-xs text-destructive">{err}</span>}
+      </div>
     );
   }
 
   return (
-    <span>
-      <button style={btn} disabled={pending} onClick={() => run(() => setActiveAction(resource, id, !isActive))}>
+    <div className="flex items-center justify-end gap-2">
+      <Button
+        variant={isActive ? 'outline' : 'success'}
+        size="sm"
+        disabled={pending}
+        onClick={() => run(() => setActiveAction(resource, id, !isActive))}
+      >
         {isActive ? 'Desativar' : 'Ativar'}
-      </button>
-      <button style={btn} disabled={pending} onClick={() => (personal ? setConfirmDelete(true) : run(() => softDeleteAction(resource, id)))}>
-        Eliminar
-      </button>
-      {indexable !== undefined && (
-        <button style={btn} disabled={pending} onClick={() => run(() => setIndexableAction(id, !indexable))}>
-          {indexable ? 'Tornar não-indexável' : 'Tornar indexável'}
-        </button>
-      )}
-      {err && <em style={{ color: '#a00', fontSize: '0.75rem' }}>{err}</em>}
+      </Button>
 
-      {confirmDelete && (
-        <div style={{ marginTop: '0.4rem', padding: '0.5rem', border: '1px solid #e0b400', background: '#fffbe6', borderRadius: 4, fontSize: '0.78rem' }}>
-          <strong>Aviso RGPD:</strong> este registo contém dados pessoais. O <em>soft-delete</em> é
-          reversível e não cumpre o direito ao esquecimento; a <em>eliminação RGPD</em> anonimiza a
-          PII e revoga o acesso de forma irreversível.
-          <div style={{ marginTop: '0.4rem' }}>
-            <button style={btn} disabled={pending} onClick={() => run(() => softDeleteAction(resource, id))}>Soft-delete (reversível)</button>
-            {resource === 'users' && (
-              <button style={{ ...btn, borderColor: '#a00', color: '#a00' }} disabled={pending}
-                onClick={() => run(() => eraseUserAction(id))}>Eliminar RGPD (irreversível)</button>
-            )}
-            <button style={btn} onClick={() => setConfirmDelete(false)}>Cancelar</button>
-          </div>
-        </div>
+      {indexable !== undefined && (
+        <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => setIndexableAction(id, !indexable))}>
+          {indexable ? 'Tornar não-indexável' : 'Tornar indexável'}
+        </Button>
       )}
-    </span>
+
+      <Button
+        variant="destructive"
+        size="sm"
+        disabled={pending}
+        onClick={() => (personal ? setConfirmDelete(true) : run(() => softDeleteAction(resource, id)))}
+      >
+        Eliminar
+      </Button>
+
+      {err && <span className="text-xs text-destructive">{err}</span>}
+
+      {/* Aviso RGPD (FR-012a): distingue soft-delete reversível de eliminação irreversível. */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar dados pessoais</DialogTitle>
+            <DialogDescription>
+              Este registo contém dados pessoais. O <strong>soft-delete</strong> é reversível e não cumpre o
+              direito ao esquecimento; a <strong>eliminação RGPD</strong> anonimiza a PII e revoga o acesso de
+              forma <strong>irreversível</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" disabled={pending} onClick={() => setConfirmDelete(false)}>
+              Cancelar
+            </Button>
+            <Button variant="secondary" disabled={pending} onClick={() => run(() => softDeleteAction(resource, id))}>
+              Soft-delete (reversível)
+            </Button>
+            {resource === 'users' && (
+              <Button variant="destructive" disabled={pending} onClick={() => run(() => eraseUserAction(id))}>
+                Eliminar RGPD (irreversível)
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

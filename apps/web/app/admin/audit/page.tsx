@@ -1,5 +1,9 @@
 import Link from 'next/link';
 import { adminFetch } from '../../../lib/admin';
+import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
+import { Card } from '../../../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +37,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
   const r = await adminFetch<AuditResponse>(`/v1/admin/audit?${qs.toString()}`);
   if (!r.ok) {
-    return <p style={{ color: '#a00' }}>{r.status === 403 ? 'Sem acesso — função de administrador necessária.' : 'Não foi possível carregar a auditoria.'}</p>;
+    const msg = r.status === 403 ? 'Sem acesso — função de administrador necessária.' : 'Não foi possível carregar a auditoria.';
+    return <Card className="border-destructive/40 p-6 text-sm text-destructive">{msg}</Card>;
   }
   const { data, meta } = r.data;
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.per_page));
@@ -45,53 +50,73 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   };
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <h1>Auditoria</h1>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Auditoria</h1>
+        <p className="text-sm text-muted-foreground">{meta.total} entradas</p>
+      </header>
 
-      <form method="get" action="/admin/audit" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <select name="action" defaultValue={sp.action ?? ''}>
+      <form method="get" action="/admin/audit" className="flex flex-wrap items-center gap-2">
+        <select
+          name="action"
+          defaultValue={sp.action ?? ''}
+          aria-label="Filtrar por ação"
+          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <option value="">Todas as ações</option>
-          {ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+          {ACTIONS.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
         </select>
-        <button type="submit">Filtrar</button>
+        <Button type="submit">Filtrar</Button>
       </form>
 
-      <p style={{ color: '#666', fontSize: '0.85rem' }}>{meta.total} entradas</p>
-
       {data.length === 0 ? (
-        <p>Sem entradas.</p>
+        <Card className="p-8 text-center text-sm text-muted-foreground">Sem entradas.</Card>
       ) : (
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.8rem' }}>
-          <thead>
-            <tr>
-              {['data', 'ação', 'entidade', 'registo', 'pessoal', 'alterações'].map((h) => (
-                <th key={h} style={{ textAlign: 'left', borderBottom: '2px solid #eee', padding: '0.4rem' }}>{h}</th>
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {['data', 'ação', 'entidade', 'registo', 'pessoal', 'alterações'].map((h) => (
+                  <TableHead key={h}>{h}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell className="whitespace-nowrap">{new Date(e.created_at).toLocaleString('pt-PT')}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{e.action}</Badge>
+                  </TableCell>
+                  <TableCell>{e.entity_type}</TableCell>
+                  <TableCell className="font-mono text-xs">{e.entity_id}</TableCell>
+                  <TableCell>{e.is_personal_data ? <Badge variant="muted">PII</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="max-w-[280px] truncate">{e.changes ?? '—'}</TableCell>
+                </TableRow>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((e) => (
-              <tr key={e.id}>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem', whiteSpace: 'nowrap' }}>
-                  {new Date(e.created_at).toLocaleString('pt-PT')}
-                </td>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem' }}>{e.action}</td>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem' }}>{e.entity_type}</td>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem', fontFamily: 'monospace' }}>{e.entity_id}</td>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem' }}>{e.is_personal_data ? 'sim' : '—'}</td>
-                <td style={{ borderBottom: '1px solid #f0f0f0', padding: '0.4rem', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {e.changes ?? '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
-      <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {page > 1 && <Link href={pageHref(page - 1)}>← Anterior</Link>}
-        <span style={{ fontSize: '0.85rem', color: '#666' }}>Página {page} de {totalPages}</span>
-        {page < totalPages && <Link href={pageHref(page + 1)}>Seguinte →</Link>}
+      <nav className="flex items-center gap-4">
+        {page > 1 && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={pageHref(page - 1)}>← Anterior</Link>
+          </Button>
+        )}
+        <span className="text-sm text-muted-foreground">
+          Página {page} de {totalPages}
+        </span>
+        {page < totalPages && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={pageHref(page + 1)}>Seguinte →</Link>
+          </Button>
+        )}
       </nav>
     </div>
   );
