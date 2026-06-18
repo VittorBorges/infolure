@@ -31,10 +31,18 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+/*
+ * Reset global em @layer base: nas páginas públicas (sem Tailwind) comporta-se como antes;
+ * nas rotas que carregam o design system (admin/ds-pilot), as utilities do Tailwind v4
+ * (@layer utilities, posterior a base) passam a vencer este reset — caso contrário um reset
+ * sem layer venceria as utilities e zerava paddings/margens (cascade de @layer).
+ */
+@layer base {
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 a {
