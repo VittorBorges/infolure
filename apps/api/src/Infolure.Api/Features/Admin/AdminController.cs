@@ -19,6 +19,9 @@ public class AdminController(
     LureIndexer indexer,
     AdminResourceService resources,
     DashboardService dashboard,
+    LureWriteService lureWrite,
+    FluentValidation.IValidator<LureWriteRequest> lureValidator,
+    Infolure.Api.Features.Media.BlobUploadService blobUpload,
     Infolure.Api.Features.Seo.SeoSettingsService seo,
     Infolure.Api.Features.Users.ProfileService profiles,
     IAdminActionContext adminCtx,
@@ -220,35 +223,66 @@ public class AdminController(
         return Created($"/v1/admin/species/{species.Id}", new { id = species.Id });
     }
 
-    [HttpPost("lures")]
-    public async Task<IActionResult> CreateLure([FromBody] CreateLureRequest body, CancellationToken ct)
+    // Validação FluentValidation → 422 ProblemDetails com mapa campo→mensagens.
+    private async Task<IActionResult?> ValidateLure(LureWriteRequest body, CancellationToken ct)
     {
-        var lure = new Lure
-        {
-            Id = Guid.NewGuid(),
-            Slug = body.Slug,
-            LureType = body.LureType,
-            BrandId = body.BrandId,
-            Status = body.Status ?? "draft",
-        };
-        lure.Translations.Add(new LureTranslation { LureId = lure.Id, Locale = "pt", Name = body.Name });
-        db.Lures.Add(lure);
-        await db.SaveChangesAsync(ct);
-        if (lure.Status == "published")
-            try { await indexer.ReindexLureAsync(lure.Id, ct); } catch { /* best-effort */ }
-        return Created($"/v1/admin/lures/{lure.Id}", new { id = lure.Id });
+        var result = await lureValidator.ValidateAsync(body, ct);
+        if (result.IsValid) return null;
+        var errors = result.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+        return UnprocessableEntity(new ValidationProblemDetails(errors) { Title = "validação falhou" });
     }
 
-    [HttpPatch("lures/{id:guid}")]
-    public async Task<IActionResult> UpdateLure(Guid id, [FromBody] UpdateLureRequest body, CancellationToken ct)
+    // ---- Feature 005 — registo/edição completos de iscas (US1/US2) ----
+
+    [HttpPost("lures")]
+    public async Task<IActionResult> CreateLure([FromBody] LureWriteRequest body, CancellationToken ct)
     {
-        var lure = await db.Lures.FirstOrDefaultAsync(l => l.Id == id, ct);
-        if (lure is null) return NotFound();
-        if (body.Status is not null) lure.Status = body.Status;
-        if (body.WeightG is not null) lure.WeightG = body.WeightG;
-        await db.SaveChangesAsync(ct);
-        try { await indexer.ReindexLureAsync(id, ct); } catch { /* best-effort */ }
-        return NoContent();
+        if (await ValidateLure(body, ct) is { } problem) return problem;
+        var r = await lureWrite.CreateAsync(body, ct);
+        return r.Outcome switch
+        {
+            LureWriteService.Outcome.SlugConflict => Conflict(new { error = "slug já existente", body.Slug }),
+            _ => Created($"/v1/admin/lures/{r.Id}", new { id = r.Id }),
+        };
+    }
+
+    [HttpGet("lures/{id:guid}")]
+    public async Task<IActionResult> GetLure(Guid id, CancellationToken ct)
+    {
+        var dto = await lureWrite.GetForEditAsync(id, ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPut("lures/{id:guid}")]
+    public async Task<IActionResult> UpdateLure(Guid id, [FromBody] LureWriteRequest body, CancellationToken ct)
+    {
+        if (await ValidateLure(body, ct) is { } problem) return problem;
+        var outcome = await lureWrite.UpdateAsync(id, body, ct);
+        return outcome switch
+        {
+            LureWriteService.Outcome.NotFound => NotFound(),
+            LureWriteService.Outcome.SlugConflict => Conflict(new { error = "slug em conflito", body.Slug }),
+            _ => NoContent(),
+        };
+    }
+
+    // ---- Feature 005 — upload de foto (foto de cor, US3) ----
+    [HttpPost("media")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<IActionResult> UploadMedia(IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0) return BadRequest(new { error = "ficheiro em falta" });
+        await using var stream = file.OpenReadStream();
+        var r = await blobUpload.UploadAsync(stream, file.ContentType, file.Length, file.FileName, ct);
+        return r.Outcome switch
+        {
+            Infolure.Api.Features.Media.BlobUploadService.Outcome.UnsupportedType => StatusCode(415, new { error = "tipo de ficheiro não suportado" }),
+            Infolure.Api.Features.Media.BlobUploadService.Outcome.TooLarge => StatusCode(413, new { error = "ficheiro demasiado grande" }),
+            Infolure.Api.Features.Media.BlobUploadService.Outcome.NotConfigured => StatusCode(503, new { error = "armazenamento de média não configurado" }),
+            _ => Created(r.Url!, new { url = r.Url }),
+        };
     }
 
     [HttpPost("lures/{id:guid}/prices")]

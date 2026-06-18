@@ -20,6 +20,7 @@ public class LureDetailService(AppDbContext db)
             .Where(l => l.BrandId == null || db.Brands.Any(b => b.Id == l.BrandId && b.IsActive))
             .Include(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(l => l.Translations)
+            .Include(l => l.Sizes)
             .Include(l => l.Colors)
             .Include(l => l.Images)
             .Include(l => l.TargetSpecies).ThenInclude(ts => ts.Species).ThenInclude(s => s.Translations)
@@ -44,6 +45,12 @@ public class LureDetailService(AppDbContext db)
         var brand = lure.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name;
         var primaryImage = lure.Images.FirstOrDefault(i => i.IsPrimary) ?? lure.Images.FirstOrDefault();
 
+        // Feature 005 — peso/comprimento derivados da lista de tamanhos (fonte única).
+        var orderedSizes = lure.Sizes.OrderBy(s => s.SortOrder).ToList();
+        decimal? weightG = orderedSizes.Count > 0 ? orderedSizes.Min(s => s.WeightG) : null;
+        decimal? lengthMm = orderedSizes.Where(s => s.LengthMm != null).Select(s => s.LengthMm).Min();
+        var firstColor = lure.Colors.FirstOrDefault();
+
         var pricing = lure.RetailerPrices.Count == 0 && lure.Price6mAvgEur is null
             ? null
             : new PricingDto(
@@ -64,23 +71,30 @@ public class LureDetailService(AppDbContext db)
             Brand: brand,
             LureType: lure.LureType,
             WaterType: lure.WaterType,
-            WeightG: lure.WeightG,
+            WeightG: weightG,
             PrimaryImageUrl: primaryImage?.Url,
-            PrimaryColorHex: lure.Colors.FirstOrDefault()?.HexPrimary,
+            PrimaryColorHex: firstColor?.HexCodes.FirstOrDefault()?.Hex,
             TargetSpecies: targetSpecies.Select(ts => ts.Species.Slug).ToArray(),
             PriceAvgEur: lure.Price6mAvgEur,
             FavoritesCount: favoritesCount,
             IsFavorited: null,
             Description: description,
-            LengthMm: lure.LengthMm,
+            LengthMm: lengthMm,
             DepthMinM: lure.DepthMinM,
             DepthMaxM: lure.DepthMaxM,
             HookSize: lure.HookSize,
             HookType: lure.HookType,
             HookCount: lure.HookCount,
             Material: lure.Material,
+            Sizes: orderedSizes.Select(s =>
+                new LureSizeDto(s.Id, s.Code, s.Label, s.LengthMm, s.WeightG)).ToList(),
             Colors: lure.Colors.Select(c =>
-                new LureColorDto(c.Id, c.NamePt, c.HexPrimary, c.HexSecondary, c.Pattern)).ToList(),
+                new LureColorDto(
+                    c.Id, c.NamePt,
+                    c.HexCodes.ElementAtOrDefault(0)?.Hex,
+                    c.HexCodes.ElementAtOrDefault(1)?.Hex,
+                    c.Pattern,
+                    c.HexCodes.Select(h => new LureHexCodeDto(h.Hex, h.Label)).ToList())).ToList(),
             Images: lure.Images.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder)
                 .Select(i => new LureImageDto(i.Url, i.ColorId, i.IsPrimary)).ToList(),
             TargetSpeciesDetail: targetSpecies.Select(ts => new TargetSpeciesDto(

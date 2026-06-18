@@ -63,8 +63,6 @@ public class Lure : ISoftDeletable
     public string? ModelRef { get; set; } // referência de modelo do fabricante (busca US-02)
     public string LureType { get; set; } = null!;
     public string? WaterType { get; set; }
-    public decimal? WeightG { get; set; }
-    public decimal? LengthMm { get; set; }
     public decimal? DepthMinM { get; set; }
     public decimal? DepthMaxM { get; set; }
     public string? HookSize { get; set; }
@@ -83,6 +81,7 @@ public class Lure : ISoftDeletable
 
     public Brand? Brand { get; set; }
     public ICollection<LureTranslation> Translations { get; set; } = new List<LureTranslation>();
+    public ICollection<LureSize> Sizes { get; set; } = new List<LureSize>();   // Feature 005 — lista de tamanhos (fonte única de peso/comprimento)
     public ICollection<LureColor> Colors { get; set; } = new List<LureColor>();
     public ICollection<LureImage> Images { get; set; } = new List<LureImage>();
     public ICollection<LureTargetSpecies> TargetSpecies { get; set; } = new List<LureTargetSpecies>();
@@ -106,14 +105,40 @@ public class LureTranslation : IAuditable
     public DateTimeOffset? DeletedAt { get; set; }
 }
 
+// Feature 005 — variante de tamanho da isca (rótulo do fabricante + comprimento + peso).
+// lure_sizes é a fonte única de peso/comprimento (os escalares de Lure foram removidos).
+public class LureSize : IAuditable
+{
+    public Guid Id { get; set; }
+    public Guid LureId { get; set; }
+    public string? Code { get; set; }          // código curto/SKU opcional
+    public string Label { get; set; } = null!;  // designação do fabricante, ex.: "100SP"
+    public decimal? LengthMm { get; set; }      // comprimento (mm)
+    public decimal WeightG { get; set; }        // peso (g) — obrigatório por tamanho
+    public short SortOrder { get; set; }
+    public Lure Lure { get; set; } = null!;
+
+    public bool IsActive { get; set; } = true;
+    public string Source { get; set; } = AuditSource.Manual;
+    public DateTimeOffset? DeletedAt { get; set; }
+}
+
+// Feature 005 — sub-objeto JSON de uma cor: código HTML (hex) + cor de base opcional (label).
+// Persistido na coluna jsonb lure_colors.hex_codes (owned-collection .ToJson()). Duplicados
+// dentro da mesma cor são permitidos (podem ter textura diferente).
+public class LureHexCode
+{
+    public string Hex { get; set; } = null!;   // "#RGB" ou "#RRGGBB" (minúsculas)
+    public string? Label { get; set; }          // cor de base, ex.: "verde"
+}
+
 public class LureColor : IAuditable
 {
     public Guid Id { get; set; }
     public Guid LureId { get; set; }
     public string NamePt { get; set; } = null!;
     public string? NameEn { get; set; }
-    public string? HexPrimary { get; set; }
-    public string? HexSecondary { get; set; }
+    public List<LureHexCode> HexCodes { get; set; } = new();  // jsonb — lista aberta de hex
     public string? Pattern { get; set; }
     public Lure Lure { get; set; } = null!;
 

@@ -50,7 +50,7 @@ public class IndexingToggleTests(AuthenticatedApiFactory factory) : IClassFixtur
 
         const string slug = "t-seo-lure-1";
         var created = await admin.PostAsJsonAsync("/v1/admin/lures",
-            new { slug, name = "SEO Lure", lure_type = "jig", status = "published" });
+            new { slug, name = "SEO Lure", lure_type = "jig", status = "published", sizes = new[] { new { label = "STD", weight_g = 10 } } });
         var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         try

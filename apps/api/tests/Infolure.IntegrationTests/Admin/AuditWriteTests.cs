@@ -20,7 +20,7 @@ public class AuditWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Au
         var admin = _factory.AdminClient();
         const string slug = "t-audit-lure-1";
         var created = await admin.PostAsJsonAsync("/v1/admin/lures",
-            new { slug, name = "Audit Lure", lure_type = "jig", status = "published" });
+            new { slug, name = "Audit Lure", lure_type = "jig", status = "published", sizes = new[] { new { label = "STD", weight_g = 10 } } });
         var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         try

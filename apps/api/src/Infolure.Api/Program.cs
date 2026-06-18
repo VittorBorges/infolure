@@ -45,6 +45,10 @@ builder.Services.AddScoped<Infolure.Api.Features.Users.ProfileService>();
 builder.Services.AddScoped<Infolure.Api.Features.Admin.RetailerPriceService>();
 builder.Services.AddScoped<Infolure.Api.Features.Admin.AdminResourceService>();      // F002 US-02
 builder.Services.AddScoped<Infolure.Api.Features.Admin.DashboardService>();           // F002 US-02
+builder.Services.AddScoped<Infolure.Api.Features.Admin.LureWriteService>();           // F005 US-01/02
+builder.Services.AddScoped<FluentValidation.IValidator<Infolure.Api.Features.Admin.LureWriteRequest>,
+    Infolure.Api.Features.Admin.LureWriteValidator>();                                // F005
+builder.Services.AddScoped<Infolure.Api.Features.Media.BlobUploadService>();          // F005 US-03
 builder.Services.AddScoped<Infolure.Api.Features.Seo.SeoSettingsService>();           // F002 US-03
 builder.Services.AddHostedService<Infolure.Api.Infrastructure.Jobs.PopularityJob>();
 

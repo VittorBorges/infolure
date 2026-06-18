@@ -54,7 +54,11 @@ public record CatalogQuery
 
 // ---- Detalhe (US-03) ----
 
-public record LureColorDto(Guid Id, string Name, string? HexPrimary, string? HexSecondary, string? Pattern);
+// Feature 005 — hex_primary/hex_secondary mantêm-se como derivados (1º/2º hex) para compat. da
+// leitura pública; hex_codes é a lista aberta completa. sizes expõe a lista de tamanhos.
+public record LureHexCodeDto(string Hex, string? Label);
+public record LureColorDto(Guid Id, string Name, string? HexPrimary, string? HexSecondary, string? Pattern, IReadOnlyList<LureHexCodeDto> HexCodes);
+public record LureSizeDto(Guid Id, string? Code, string Label, decimal? LengthMm, decimal WeightG);
 public record LureImageDto(string Url, Guid? ColorId, bool IsPrimary);
 public record TargetSpeciesDto(string Slug, string CommonName, string? Confidence);
 public record RetailerPriceDto(string Retailer, string? Url, decimal PriceEur, bool InStock);
@@ -85,6 +89,7 @@ public record LureDetailDto(
     string? HookType,
     short? HookCount,
     string? Material,
+    IReadOnlyList<LureSizeDto> Sizes,
     IReadOnlyList<LureColorDto> Colors,
     IReadOnlyList<LureImageDto> Images,
     IReadOnlyList<TargetSpeciesDto> TargetSpeciesDetail,

@@ -66,6 +66,7 @@ public class FavoritesService(AppDbContext db, UserResolver users, LureIndexer i
             .Skip((page - 1) * perPage).Take(perPage)
             .Include(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(l => l.Translations)
+            .Include(l => l.Sizes)
             .Include(l => l.Images)
             .Include(l => l.TargetSpecies).ThenInclude(ts => ts.Species)
             .AsNoTracking()
@@ -84,7 +85,7 @@ public class FavoritesService(AppDbContext db, UserResolver users, LureIndexer i
             Brand: l.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name,
             LureType: l.LureType,
             WaterType: l.WaterType,
-            WeightG: l.WeightG,
+            WeightG: l.Sizes.Select(s => (decimal?)s.WeightG).Min(),
             PrimaryImageUrl: l.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? l.Images.FirstOrDefault()?.Url,
             PrimaryColorHex: null,
             TargetSpecies: l.TargetSpecies.Select(ts => ts.Species.Slug).ToArray(),

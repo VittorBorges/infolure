@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
     public DbSet<SpeciesTranslation> SpeciesTranslations => Set<SpeciesTranslation>();
     public DbSet<Lure> Lures => Set<Lure>();
     public DbSet<LureTranslation> LureTranslations => Set<LureTranslation>();
+    public DbSet<LureSize> LureSizes => Set<LureSize>();
     public DbSet<LureColor> LureColors => Set<LureColor>();
     public DbSet<LureImage> LureImages => Set<LureImage>();
     public DbSet<LureTargetSpecies> LureTargetSpecies => Set<LureTargetSpecies>();
@@ -68,7 +69,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
             e.HasIndex(x => x.Slug).IsUnique();
             e.HasIndex(x => x.LureType);
             e.HasIndex(x => x.WaterType);
-            e.HasIndex(x => x.WeightG);
             e.HasIndex(x => x.BrandId);
             e.HasIndex(x => x.Status);
             e.Property(x => x.Attributes).HasColumnType("jsonb").HasDefaultValueSql("'{}'");
@@ -93,9 +93,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
                 .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        b.Entity<LureSize>(e =>
+        {
+            e.HasIndex(x => x.LureId);
+            e.HasOne(x => x.Lure).WithMany(x => x.Sizes)
+                .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         b.Entity<LureColor>(e =>
+        {
+            // Feature 005 — hex_codes como coluna jsonb (owned-collection .ToJson()).
+            e.OwnsMany(x => x.HexCodes, nb => nb.ToJson("hex_codes"));
             e.HasOne(x => x.Lure).WithMany(x => x.Colors)
-                .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade));
+                .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         b.Entity<LureImage>(e =>
         {

@@ -98,9 +98,16 @@ export default async function AdminResourcePage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold capitalize tracking-tight">{resource}</h1>
-        <p className="text-sm text-muted-foreground">{meta.total} registos</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold capitalize tracking-tight">{resource}</h1>
+          <p className="text-sm text-muted-foreground">{meta.total} registos</p>
+        </div>
+        {resource === 'lures' && (
+          <Button asChild size="sm">
+            <Link href="/admin/lures/new">+ Nova isca</Link>
+          </Button>
+        )}
       </header>
 
       <form method="get" action={`/admin/${resource}`} className="flex flex-wrap items-center gap-2">

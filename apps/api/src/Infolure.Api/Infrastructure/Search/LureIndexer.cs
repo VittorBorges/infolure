@@ -13,6 +13,7 @@ public class LureIndexer(AppDbContext db, ITypesenseClient typesense)
     private static IQueryable<Persistence.Entities.Lure> WithGraph(IQueryable<Persistence.Entities.Lure> q)
         => q.Include(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(l => l.Translations)
+            .Include(l => l.Sizes)
             .Include(l => l.Images)
             .Include(l => l.TargetSpecies).ThenInclude(ts => ts.Species)
             .AsNoTracking();
@@ -83,7 +84,7 @@ public class LureIndexer(AppDbContext db, ITypesenseClient typesense)
             BrandName = l.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name ?? "",
             LureType = l.LureType,
             WaterType = l.WaterType ?? "",
-            WeightG = (float?)l.WeightG,
+            WeightG = l.Sizes.Count > 0 ? (float?)l.Sizes.Min(s => s.WeightG) : null,  // Feature 005 — peso = min dos tamanhos
             DepthMinM = (float?)l.DepthMinM,
             DepthMaxM = (float?)l.DepthMaxM,
             TargetSpecies = l.TargetSpecies.Select(ts => ts.Species.Slug).ToArray(),
