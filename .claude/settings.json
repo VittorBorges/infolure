@@ -2,6 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(*)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/private/tmp"
     ]
   }
 }

@@ -33,3 +33,6 @@ Thumbs.db
 # Feature 004 — design system package artifacts
 packages/design-system/dist/
 packages/design-system/storybook-static/
+
+# Memória local do Claude Code (estado por-máquina, não versionar)
+.claude/projects/
