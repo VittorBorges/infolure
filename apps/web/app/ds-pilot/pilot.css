@@ -1,0 +1,10 @@
+/*
+ * CSS de entrada do piloto público (US3). Importado APENAS por app/ds-pilot/page.tsx →
+ * Tailwind/Preflight + tokens ficam confinados a /ds-pilot; o resto do público fica intocado (FR-011).
+ * Prova que o frontend público pode consumir o design system partilhado (FR-007/SC-005).
+ */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@infolure/design-system/tokens.css';
+
+@source '../../../../packages/design-system/src';

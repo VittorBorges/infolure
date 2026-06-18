@@ -1,6 +1,5 @@
 import { adminFetch } from '../../lib/admin';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, Badge } from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
 

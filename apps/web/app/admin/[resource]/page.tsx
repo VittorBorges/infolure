@@ -2,11 +2,18 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { adminFetch, ADMIN_RESOURCES, PERSONAL_RESOURCES, type AdminResource, type PagedResponse } from '../../../lib/admin';
 import { RowActions } from '../../../components/admin/RowActions';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Badge } from '../../../components/ui/badge';
-import { Card } from '../../../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import {
+  Button,
+  Input,
+  Badge,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
 

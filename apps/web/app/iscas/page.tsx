@@ -5,7 +5,7 @@ import { FilterPanel } from '../../components/catalog/FilterPanel';
 import { SortControls } from '../../components/catalog/SortControls';
 import { NoResults } from '../../components/catalog/NoResults';
 import { SearchBar } from '../../components/search/SearchBar';
-import { ErrorState } from '../../components/ui/States';
+import { ErrorState } from '../../components/States';
 
 export const dynamic = 'force-dynamic';
 

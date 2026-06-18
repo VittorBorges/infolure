@@ -1,0 +1,15 @@
+{
+  "name": "infolure-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/web",
+    "packages/design-system"
+  ],
+  "scripts": {
+    "build:ds": "npm run build -w @infolure/design-system",
+    "dev:web": "npm run dev -w web",
+    "build:web": "npm run build -w web",
+    "storybook": "npm run storybook -w @infolure/design-system"
+  }
+}

@@ -1,14 +1,15 @@
 <!-- SPECKIT START -->
-Active feature: **003 — Design System do Backoffice Admin**.
+Active feature: **004 — Design System Partilhado + Storybook**.
 Stack: backend **.NET 10 (ASP.NET Core)** + frontend **Next.js 16 (React/TS)**;
 PostgreSQL (EF Core), Typesense, Redis, Supabase Auth, Azure (West Europe).
-Feature 003 adds **Tailwind CSS v4 + shadcn/ui** to `apps/web`, scoped to the `/admin` subtree
-(light theme, white/blue/green); the public frontend is intentionally untouched.
+Feature 004 promotes the shadcn/ui components + tokens from feature 003 into a shared monorepo
+package **`@infolure/design-system`** (`packages/design-system`, npm workspaces, tsup build,
+Storybook). Tokens are the single source of truth; the admin migrates to consume the package, and
+the public frontend gains availability + a pilot. Backend is untouched.
 For technologies, project structure, shell commands, and other context, read the current plan:
-`specs/003-admin-design-system/plan.md` (with `research.md`, `data-model.md`,
-`contracts/design-tokens.md`, `quickstart.md`). Features 001 (`specs/001-lure-catalog-mvp/`) and
-002 (`specs/002-admin-indexing-audit/`) remain the baseline. Governing principles:
-`.specify/memory/constitution.md`.
+`specs/004-design-system-package/plan.md` (with `research.md`, `data-model.md`,
+`contracts/package-api.md`, `quickstart.md`). Features 001–003 remain the baseline. Governing
+principles: `.specify/memory/constitution.md`.
 <!-- SPECKIT END -->
 
 Versioning: **per feature** (`specs/NNN-*`), not semantic releases or git tags. See

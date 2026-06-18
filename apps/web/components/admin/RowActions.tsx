@@ -3,15 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { setActiveAction, softDeleteAction, restoreAction, setIndexableAction, eraseUserAction } from '../../lib/admin-actions';
-import { Button } from '../ui/button';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
+} from '@infolure/design-system';
 
 interface Props {
   resource: string;

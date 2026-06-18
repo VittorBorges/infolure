@@ -1,9 +1,16 @@
 import Link from 'next/link';
 import { adminFetch } from '../../../lib/admin';
-import { Button } from '../../../components/ui/button';
-import { Badge } from '../../../components/ui/badge';
-import { Card } from '../../../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import {
+  Button,
+  Badge,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
 

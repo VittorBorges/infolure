@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSupabaseServerClient } from '../../../lib/supabase/server';
 import { LureCard } from '../../../components/catalog/LureCard';
-import { EmptyState } from '../../../components/ui/States';
+import { EmptyState } from '../../../components/States';
 import type { LureListResponse } from '../../../lib/catalog';
 
 export const dynamic = 'force-dynamic';

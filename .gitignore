@@ -29,3 +29,7 @@ playwright-report/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Feature 004 — design system package artifacts
+packages/design-system/dist/
+packages/design-system/storybook-static/

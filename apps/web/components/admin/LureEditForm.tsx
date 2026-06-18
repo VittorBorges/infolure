@@ -5,10 +5,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 
 import { updateLureAction } from '../../lib/admin-actions';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription } from '@infolure/design-system';
 
 const STATUSES = ['draft', 'published', 'archived'] as const;
 

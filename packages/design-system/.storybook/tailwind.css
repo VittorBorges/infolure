@@ -1,0 +1,8 @@
+/* CSS global do Storybook: tema + utilities para as stories renderizarem como na app. */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '../src/tokens.css';
+
+/* Gera as utilities usadas pelos componentes e stories. */
+@source '../src';
+@source '../stories';

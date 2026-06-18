@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { ADMIN_RESOURCES, type AdminResource } from '../../../../lib/admin';
 import { LureEditForm } from '../../../../components/admin/LureEditForm';
-import { Button } from '../../../../components/ui/button';
-import { Card, CardContent } from '../../../../components/ui/card';
+import { Button, Card, CardContent } from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
 
