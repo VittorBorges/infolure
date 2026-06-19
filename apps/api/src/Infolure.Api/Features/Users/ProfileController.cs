@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Infolure.Api.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,9 @@ namespace Infolure.Api.Features.Users;
 [ApiController]
 public class ProfileController(ProfileService profiles) : ControllerBase
 {
-    private string? Sub => User.FindFirst("sub")?.Value;
+    // O JwtBearer (MapInboundClaims=true, default) renomeia o claim `sub` do Supabase para
+    // ClaimTypes.NameIdentifier; daí o fallback (mesmo padrão do ActiveUserMiddleware).
+    private string? Sub => User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
     /// <summary>US-07 — perfil público (sem PII).</summary>
     [HttpGet("v1/users/{username}")]
@@ -16,6 +19,16 @@ public class ProfileController(ProfileService profiles) : ControllerBase
     {
         var profile = await profiles.GetPublicProfileAsync(username, ct);
         return profile is null ? NotFound() : Ok(profile);
+    }
+
+    /// <summary>Feature 007 — identidade da sessão atual (nome/email + função) para o painel admin.</summary>
+    [HttpGet("v1/me")]
+    [Authorize(Policy = AuthExtensions.UserPolicy)]
+    public async Task<ActionResult<MeDto>> Me(CancellationToken ct)
+    {
+        if (Sub is null) return Unauthorized();
+        var me = await profiles.GetMeAsync(Sub, ct);
+        return me is null ? Unauthorized() : Ok(me);
     }
 
     /// <summary>US-07 — atualiza nome/avatar próprios.</summary>

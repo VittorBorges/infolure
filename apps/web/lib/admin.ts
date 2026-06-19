@@ -44,3 +44,18 @@ export interface PagedResponse {
   data: Record<string, unknown>[];
   meta: { total: number; page: number; per_page: number };
 }
+
+// Feature 007 — identidade da sessão atual (GET /v1/me). Deriva do contrato contracts/me-api.yaml.
+// Nunca inclui o id (UUID).
+export interface Me {
+  email: string | null;
+  username: string | null;
+  display_name: string | null;
+  role: string;
+  avatar_url: string | null;
+}
+
+/** Perfil do utilizador autenticado (sessão atual). 401 se sem sessão/perfil. */
+export async function getMe(): Promise<AdminResult<Me>> {
+  return adminFetch<Me>('/v1/me');
+}

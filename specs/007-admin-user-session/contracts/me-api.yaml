@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Infolure API — Feature 007 (perfil da sessão atual)
+  version: "007"
+  description: >
+    Delta de contrato da feature 007. Adiciona um endpoint de leitura do perfil do utilizador
+    autenticado (a sessão atual), consumido pelo painel de administração para mostrar a identidade
+    (nome/email + função). JSON snake_case. Reutiliza a autenticação por JWT (claim "sub").
+
+servers:
+  - url: /
+
+paths:
+  /v1/me:
+    get:
+      summary: Perfil do utilizador autenticado (sessão atual)
+      operationId: getMe
+      description: >
+        Devolve a identidade legível do utilizador da sessão atual, resolvido pelo claim "sub" do JWT.
+        Nunca devolve o identificador interno (UUID). Requer autenticação (UserPolicy).
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Perfil da sessão atual
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401":
+          description: Sem sessão válida (token ausente/inválido)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Me:
+      type: object
+      required: [role]
+      properties:
+        email: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+        display_name: { type: string, nullable: true }
+        role: { type: string, enum: [user, admin] }
+        avatar_url: { type: string, nullable: true }
+      # Nota: "id" (UUID) é deliberadamente omitido (FR-004 — nunca expor identificadores internos).

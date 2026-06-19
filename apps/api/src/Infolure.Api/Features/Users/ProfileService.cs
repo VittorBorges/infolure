@@ -14,6 +14,9 @@ public record PublicProfileDto(
 
 public record UpdateProfileRequest(string? DisplayName, string? AvatarUrl);
 
+// Feature 007 — identidade da sessão atual para o painel admin. NÃO inclui o id (UUID) — FR-004.
+public record MeDto(string? Email, string? Username, string? DisplayName, string Role, string? AvatarUrl);
+
 /// <summary>
 /// Perfil público e gestão da própria conta (US-07). O perfil público NÃO expõe PII
 /// (email, nome real) — apenas username, avatar, data de adesão e contagens.
@@ -33,6 +36,20 @@ public class ProfileService(AppDbContext db, UserResolver users, ILogger<Profile
         var reviews = await db.LureReviews.CountAsync(r => r.UserId == user.Id && r.Status == "published", ct);
 
         return new PublicProfileDto(user.Username!, user.AvatarUrl, user.CreatedAt, favorites, inventory, reviews);
+    }
+
+    /// <summary>Feature 007 — identidade da sessão atual (nome/email + função) para o painel admin.</summary>
+    public async Task<MeDto?> GetMeAsync(string sub, CancellationToken ct = default)
+    {
+        var userId = await users.ResolveUserIdAsync(sub, ct);
+        if (userId is null) return null;
+        var u = await db.Users
+            .Where(x => x.Id == userId)
+            .Select(x => new MeDto(x.Email, x.Username, x.DisplayName, x.Role, x.AvatarUrl))
+            .FirstOrDefaultAsync(ct);
+        // Observabilidade (Princípio II): resultado sem PII (não regista email/nome).
+        logger.LogInformation("GET /v1/me resolvido={Resolved} role={Role}", u is not null, u?.Role);
+        return u;
     }
 
     public async Task<bool> UpdateAsync(string sub, UpdateProfileRequest req, CancellationToken ct = default)
