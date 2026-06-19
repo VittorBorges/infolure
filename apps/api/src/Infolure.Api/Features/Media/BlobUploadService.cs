@@ -21,11 +21,21 @@ public class BlobUploadService(IConfiguration config, ILogger<BlobUploadService>
 
     public record UploadResult(Outcome Outcome, string? Url);
 
+    /// <summary>
+    /// Validação pura de tipo/tamanho (Feature 006/FR-012, testável sem Azure). Limite = 5 MB:
+    /// aceita > 1 MB (corrige o bug) e recusa > 5 MB. <c>null</c> = válido.
+    /// </summary>
+    public static Outcome? Validate(string contentType, long length)
+    {
+        if (!AllowedContentTypes.Contains(contentType)) return Outcome.UnsupportedType;
+        if (length > MaxBytes) return Outcome.TooLarge;
+        return null;
+    }
+
     public async Task<UploadResult> UploadAsync(Stream content, string contentType, long length, string fileName, CancellationToken ct)
     {
         if (!IsConfigured) return new UploadResult(Outcome.NotConfigured, null);
-        if (!AllowedContentTypes.Contains(contentType)) return new UploadResult(Outcome.UnsupportedType, null);
-        if (length > MaxBytes) return new UploadResult(Outcome.TooLarge, null);
+        if (Validate(contentType, length) is { } bad) return new UploadResult(bad, null);
 
         var container = new BlobContainerClient(_conn, _container);
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);

@@ -2,12 +2,12 @@
 
 import { Button, Input, Label, Card, CardContent } from '@infolure/design-system';
 import { HexCodeListField, type HexRow } from './HexCodeListField';
-import { ColorPhotoField } from './ColorPhotoField';
+import { ColorPhotosField } from './ColorPhotosField';
 
 export interface ColorRow {
   name_pt: string;
   pattern: string;
-  photo_url: string;
+  photos: string[];
   hex: HexRow[];
 }
 
@@ -16,7 +16,7 @@ interface Props {
   onChange: (next: ColorRow[]) => void;
 }
 
-export const emptyColor = (): ColorRow => ({ name_pt: '', pattern: '', photo_url: '', hex: [] });
+export const emptyColor = (): ColorRow => ({ name_pt: '', pattern: '', photos: [], hex: [] });
 
 // Feature 005 (US3) — lista de cores. Cada cor: nome, padrão, foto opcional e lista de hex.
 export function ColorListField({ value, onChange }: Props) {
@@ -48,7 +48,7 @@ export function ColorListField({ value, onChange }: Props) {
               </Button>
             </div>
             <HexCodeListField value={row.hex} onChange={(hex) => update(i, { hex })} />
-            <ColorPhotoField value={row.photo_url} onChange={(photo_url) => update(i, { photo_url })} />
+            <ColorPhotosField value={row.photos} onChange={(photos) => update(i, { photos })} />
           </CardContent>
         </Card>
       ))}

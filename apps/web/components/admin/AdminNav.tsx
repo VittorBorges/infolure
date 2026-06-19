@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Fish, Tag, Waves, Users, ScrollText, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Fish, Tag, Waves, Users, ScrollText, Settings, type LucideIcon } from 'lucide-react';
 
 import { cn } from '@infolure/design-system';
 
@@ -13,6 +13,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/admin/species', label: 'Espécies', icon: Waves },
   { href: '/admin/users', label: 'Utilizadores', icon: Users },
   { href: '/admin/audit', label: 'Auditoria', icon: ScrollText },
+  { href: '/admin/settings', label: 'Definições', icon: Settings },
 ];
 
 export function AdminNav() {

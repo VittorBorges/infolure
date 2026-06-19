@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { ADMIN_RESOURCES, type AdminResource } from '../../../../lib/admin';
 import { LureForm } from '../../../../components/admin/LureForm';
+import { BrandForm } from '../../../../components/admin/BrandForm';
 import { Button, Card, CardContent } from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
@@ -26,10 +27,12 @@ export default async function AdminNewPage({ params }: { params: Promise<{ resou
 
       {resource === 'lures' ? (
         <LureForm mode="create" />
+      ) : resource === 'brands' ? (
+        <BrandForm mode="create" />
       ) : (
         <Card className="max-w-xl">
           <CardContent className="pt-6 text-sm text-muted-foreground">
-            O registo detalhado está disponível apenas para iscas.
+            O registo detalhado está disponível para iscas e marcas.
           </CardContent>
         </Card>
       )}

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { ADMIN_RESOURCES, adminFetch, type AdminResource } from '../../../../lib/admin';
 import { LureForm, type LureInitial } from '../../../../components/admin/LureForm';
+import { BrandForm, type BrandInitial } from '../../../../components/admin/BrandForm';
 import { Button, Card, CardContent } from '@infolure/design-system';
 
 export const dynamic = 'force-dynamic';
@@ -19,33 +20,37 @@ export default async function AdminEditPage({
   const { resource, id } = await params;
   if (!isResource(resource)) notFound();
 
-  let initial: LureInitial | null = null;
+  let lure: LureInitial | null = null;
+  let brand: BrandInitial | null = null;
   if (resource === 'lures') {
     const r = await adminFetch<LureInitial>(`/v1/admin/lures/${id}`);
-    if (!r.ok) {
-      if (r.status === 404) notFound();
-    } else {
-      initial = r.data;
-    }
+    if (!r.ok) { if (r.status === 404) notFound(); } else { lure = r.data; }
+  } else if (resource === 'brands') {
+    const r = await adminFetch<BrandInitial>(`/v1/admin/brands/${id}`);
+    if (!r.ok) { if (r.status === 404) notFound(); } else { brand = r.data; }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold capitalize tracking-tight">Editar {resource === 'lures' ? 'isca' : resource}</h1>
+        <h1 className="text-2xl font-semibold capitalize tracking-tight">
+          Editar {resource === 'lures' ? 'isca' : resource === 'brands' ? 'marca' : resource}
+        </h1>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/admin/${resource}`}>← Voltar</Link>
         </Button>
       </div>
 
-      {resource === 'lures' && initial ? (
-        <LureForm mode="edit" initial={initial} />
+      {resource === 'lures' && lure ? (
+        <LureForm mode="edit" initial={lure} />
+      ) : resource === 'brands' && brand ? (
+        <BrandForm mode="edit" initial={brand} />
       ) : (
         <Card className="max-w-xl">
           <CardContent className="pt-6 text-sm text-muted-foreground">
-            {resource === 'lures'
-              ? 'Não foi possível carregar a isca (sessão admin necessária).'
-              : 'A edição detalhada está disponível apenas para iscas. Para os outros recursos, use as ações na listagem.'}
+            {resource === 'lures' || resource === 'brands'
+              ? 'Não foi possível carregar o registo (sessão admin necessária).'
+              : 'A edição detalhada está disponível para iscas e marcas. Para os outros recursos, use as ações na listagem.'}
           </CardContent>
         </Card>
       )}

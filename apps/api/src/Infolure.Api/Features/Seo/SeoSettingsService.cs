@@ -60,13 +60,14 @@ public class SeoSettingsService(AppDbContext db, IServiceProvider sp)
         if (cache is not null) await cache.KeyDeleteAsync(CacheKey);
     }
 
-    /// <summary>Iscas elegíveis para sitemap: published+active+não-eliminado+indexable+marca ativa. Vazio se global off.</summary>
+    /// <summary>Iscas elegíveis para sitemap: published+active+não-eliminado+marca ativa. Vazio se a
+    /// indexação global estiver desligada (Feature 006 — sem controlo por isca).</summary>
     public async Task<IReadOnlyList<SitemapEntry>> GetSitemapAsync(CancellationToken ct = default)
     {
         if (!await GetEnabledAsync(ct)) return [];
 
         return await db.Lures
-            .Where(l => l.Status == "published" && l.IsActive && l.IsIndexable)
+            .Where(l => l.Status == "published" && l.IsActive)
             .Where(l => l.BrandId == null || db.Brands.Any(b => b.Id == l.BrandId && b.IsActive))
             .OrderBy(l => l.Slug)
             .Select(l => new SitemapEntry(l.Slug, l.UpdatedAt))

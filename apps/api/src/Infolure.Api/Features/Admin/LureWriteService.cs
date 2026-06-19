@@ -6,10 +6,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Infolure.Api.Features.Admin;
 
 /// <summary>
-/// Feature 005 — escrita transacional de iscas (criar/editar) com coleções aninhadas.
-/// Estratégia replace-children ESTRITAMENTE limitada a translations(pt)/sizes/colors(+hex)/
-/// imagens-de-cor/target-species. NUNCA toca em preços, reviews, imagens gerais nem is_indexable.
-/// Na edição, status ausente preserva o atual (FR-013). lure_sizes é a fonte única de peso.
+/// Feature 005/006 — escrita transacional de iscas (criar/editar) com coleções aninhadas.
+/// Estratégia replace-children ESTRITAMENTE limitada a translations(pt)/configurations/colors(+hex)/
+/// imagens-de-cor/target-species. NUNCA toca em preços, reviews nem imagens gerais.
+/// Na edição, status ausente preserva o atual (FR-013). lure_configurations é a fonte única de
+/// peso/comprimento e do anzol (Feature 006); cada cor pode ter várias fotos.
 /// </summary>
 public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<LureWriteService> log)
 {
@@ -43,7 +44,7 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
     {
         var lure = await db.Lures
             .Include(l => l.Translations)
-            .Include(l => l.Sizes)
+            .Include(l => l.Configurations)
             .Include(l => l.Colors)
             .FirstOrDefaultAsync(l => l.Id == id, ct);
         if (lure is null) return Outcome.NotFound;
@@ -55,8 +56,8 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
         lure.UpdatedAt = DateTimeOffset.UtcNow;
         ApplyTranslation(lure, req);
 
-        // replace-children limitado: sizes, colors(+hex via owned json) e imagens DE COR.
-        db.LureSizes.RemoveRange(lure.Sizes);
+        // replace-children limitado: configurations, colors(+hex via owned json) e imagens DE COR.
+        db.LureConfigurations.RemoveRange(lure.Configurations);
         db.LureColors.RemoveRange(lure.Colors);
         var colorImages = await db.LureImages.Where(i => i.LureId == id && i.ColorId != null).ToListAsync(ct);
         db.LureImages.RemoveRange(colorImages);
@@ -74,28 +75,32 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
     {
         var l = await db.Lures
             .Include(x => x.Translations)
-            .Include(x => x.Sizes)
+            .Include(x => x.Configurations)
             .Include(x => x.Colors)
             .Include(x => x.Images)
             .Include(x => x.TargetSpecies)
+            .Include(x => x.Brand).ThenInclude(b => b!.Translations)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (l is null) return null;
 
         var tr = l.Translations.FirstOrDefault(t => t.Locale == "pt");
-        var photoByColor = l.Images.Where(i => i.ColorId != null)
+        var brandName = l.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name;
+        // Feature 006 — várias fotos por cor (ordenadas), agrupadas por color_id.
+        var photosByColor = l.Images.Where(i => i.ColorId != null)
             .GroupBy(i => i.ColorId!.Value)
-            .ToDictionary(g => g.Key, g => g.First().Url);
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.IsPrimary).ThenBy(i => i.SortOrder)
+                .Select(i => i.Url).ToList());
 
         return new AdminLureDetailDto(
-            l.Id, l.Slug, tr?.Name ?? l.Slug, tr?.Description, l.BrandId, l.LureType, l.WaterType,
-            l.ModelRef, l.HookSize, l.HookType, l.HookCount, l.Material, l.DepthMinM, l.DepthMaxM,
-            l.Status, l.IsIndexable,
-            l.Sizes.OrderBy(s => s.SortOrder)
-                .Select(s => new AdminLureSizeDto(s.Id, s.Code, s.Label, s.LengthMm, s.WeightG, s.SortOrder)).ToList(),
+            l.Id, l.Slug, tr?.Name ?? l.Slug, tr?.Description, l.BrandId, brandName, l.LureType, l.WaterType,
+            l.ModelRef, l.Material, l.DepthMinM, l.DepthMaxM, l.Status,
+            l.Configurations.OrderBy(c => c.SortOrder)
+                .Select(c => new AdminLureConfigurationDto(c.Id, c.Code, c.Label, c.LengthMm, c.WeightG,
+                    c.HookSize, c.HookType, c.HookCount, c.SortOrder)).ToList(),
             l.Colors.Select(c => new AdminLureColorDto(
                 c.Id, c.NamePt, c.NameEn, c.Pattern,
-                photoByColor.GetValueOrDefault(c.Id),
+                photosByColor.GetValueOrDefault(c.Id) ?? [],
                 c.HexCodes.Select(h => new AdminLureHexCodeDto(h.Hex, h.Label, 0)).ToList())).ToList(),
             l.TargetSpecies.Select(t => new TargetSpeciesInput(t.SpeciesId, t.Confidence)).ToList());
     }
@@ -110,12 +115,10 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
         lure.LureType = req.LureType;
         lure.WaterType = req.WaterType;
         lure.ModelRef = req.ModelRef;
-        lure.HookSize = req.HookSize;
-        lure.HookType = req.HookType;
-        lure.HookCount = req.HookCount;
         lure.Material = req.Material;
         lure.DepthMinM = req.DepthMinM;
         lure.DepthMaxM = req.DepthMaxM;
+        // Feature 006: anzol agora por configuração; indexação SEO é global (sem campos na isca).
     }
 
     private static void ApplyTranslation(Lure lure, LureWriteRequest req)
@@ -132,11 +135,13 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
 
     private void ApplyChildren(Lure lure, LureWriteRequest req)
     {
-        foreach (var (s, i) in (req.Sizes ?? []).Select((s, i) => (s, i)))
-            db.LureSizes.Add(new LureSize
+        foreach (var (cfg, i) in (req.Configurations ?? []).Select((c, i) => (c, i)))
+            db.LureConfigurations.Add(new LureConfiguration
             {
-                Id = Guid.NewGuid(), LureId = lure.Id, Code = s.Code, Label = s.Label,
-                LengthMm = s.LengthMm, WeightG = s.WeightG, SortOrder = s.SortOrder == 0 ? (short)i : s.SortOrder,
+                Id = Guid.NewGuid(), LureId = lure.Id, Code = cfg.Code, Label = cfg.Label,
+                LengthMm = cfg.LengthMm, WeightG = cfg.WeightG,
+                HookSize = cfg.HookSize, HookType = cfg.HookType, HookCount = cfg.HookCount,
+                SortOrder = cfg.SortOrder == 0 ? (short)i : cfg.SortOrder,
             });
 
         foreach (var c in req.Colors ?? [])
@@ -150,10 +155,11 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
                     .Select(h => new LureHexCode { Hex = h.Hex.Trim().ToLowerInvariant(), Label = h.Label })
                     .ToList(),
             });
-            if (!string.IsNullOrWhiteSpace(c.PhotoUrl))
+            // Feature 006 — várias fotos por cor (ordem = índice na lista).
+            foreach (var (url, idx) in (c.PhotoUrls ?? []).Where(u => !string.IsNullOrWhiteSpace(u)).Select((u, idx) => (u, idx)))
                 db.LureImages.Add(new LureImage
                 {
-                    Id = Guid.NewGuid(), LureId = lure.Id, ColorId = colorId, Url = c.PhotoUrl!, IsPrimary = false,
+                    Id = Guid.NewGuid(), LureId = lure.Id, ColorId = colorId, Url = url, SortOrder = (short)idx, IsPrimary = idx == 0,
                 });
         }
 

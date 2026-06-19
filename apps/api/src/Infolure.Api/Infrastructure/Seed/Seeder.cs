@@ -75,11 +75,12 @@ public static class Seeder
                 LureId = lure.Id, Locale = "pt", Name = $"Isca {i:000}",
                 Description = "Isca de exemplo para desenvolvimento.",
             });
-            // Feature 005 — lista de tamanhos (fonte única de peso/comprimento) e cor com hex_codes.
-            lure.Sizes.Add(new LureSize
+            // Feature 006 — lista de configurações (peso/comprimento/anzol) e cor com hex_codes.
+            lure.Configurations.Add(new LureConfiguration
             {
                 Id = Guid.NewGuid(), LureId = lure.Id, Code = $"S{i % 3 + 1}", Label = $"{40 + i % 80}mm",
-                LengthMm = 40 + i % 80, WeightG = 5 + i % 30, SortOrder = 0,
+                LengthMm = 40 + i % 80, WeightG = 5 + i % 30,
+                HookSize = $"#{2 + i % 6}", HookType = "treble", HookCount = (short)(2 + i % 2), SortOrder = 0,
             });
             lure.Colors.Add(new LureColor
             {

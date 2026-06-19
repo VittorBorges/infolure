@@ -90,7 +90,7 @@ public class InventoryService(AppDbContext db, UserResolver users)
             .OrderBy(i => i.Lure.LureType)
             .Include(i => i.Lure).ThenInclude(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(i => i.Lure).ThenInclude(l => l.Translations)
-            .Include(i => i.Lure).ThenInclude(l => l.Sizes)
+            .Include(i => i.Lure).ThenInclude(l => l.Configurations)
             .Include(i => i.Lure).ThenInclude(l => l.Images)
             .Include(i => i.Lure).ThenInclude(l => l.TargetSpecies).ThenInclude(ts => ts.Species)
             .AsNoTracking()
@@ -117,7 +117,7 @@ public class InventoryService(AppDbContext db, UserResolver users)
             .Where(i => i.Id == entryId)
             .Include(i => i.Lure).ThenInclude(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(i => i.Lure).ThenInclude(l => l.Translations)
-            .Include(i => i.Lure).ThenInclude(l => l.Sizes)
+            .Include(i => i.Lure).ThenInclude(l => l.Configurations)
             .Include(i => i.Lure).ThenInclude(l => l.Images)
             .Include(i => i.Lure).ThenInclude(l => l.TargetSpecies).ThenInclude(ts => ts.Species)
             .AsNoTracking()
@@ -137,7 +137,7 @@ public class InventoryService(AppDbContext db, UserResolver users)
             Brand: l.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name,
             LureType: l.LureType,
             WaterType: l.WaterType,
-            WeightG: l.Sizes.Select(s => (decimal?)s.WeightG).Min(),
+            WeightG: l.Configurations.Select(c => (decimal?)c.WeightG).Min(),
             PrimaryImageUrl: l.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? l.Images.FirstOrDefault()?.Url,
             PrimaryColorHex: null,
             TargetSpecies: l.TargetSpecies.Select(ts => ts.Species.Slug).ToArray(),

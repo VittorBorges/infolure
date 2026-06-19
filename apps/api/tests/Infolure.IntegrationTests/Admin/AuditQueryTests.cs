@@ -18,7 +18,7 @@ public class AuditQueryTests(AuthenticatedApiFactory factory) : IClassFixture<Au
 
         // Gera uma ação auditável (deactivate sobre uma isca criada).
         var created = await admin.PostAsJsonAsync("/v1/admin/lures",
-            new { slug = "t-audit-q-1", name = "Audit Q", lure_type = "jig", status = "published", sizes = new[] { new { label = "STD", weight_g = 10 } } });
+            new { slug = "t-audit-q-1", name = "Audit Q", lure_type = "jig", status = "published", configurations = new[] { new { label = "STD", weight_g = 10 } } });
         var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         await admin.PutAsJsonAsync($"/v1/admin/lures/{id}/active", new { is_active = false });
 

@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: Infolure Admin API — Delta Feature 006
+  version: "006"
+  description: >
+    Alterações ao contrato admin face à feature 005. JSON snake_case; tudo sob a policy de admin.
+    Resume apenas o que muda (delta); o resto da escrita de iscas mantém-se da 005.
+
+servers:
+  - url: /v1/admin
+
+paths:
+  /settings/indexing:
+    get:
+      summary: Estado global de indexação SEO (US1)
+      operationId: getGlobalIndexing
+      responses:
+        "200":
+          description: Estado atual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+    put:
+      summary: Ligar/desligar indexação SEO global (US1) — já existente, agora consumido pelo painel
+      operationId: setGlobalIndexing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "204": { description: Atualizado }
+
+  # REMOVIDO: PUT /lures/{id}/indexable (indexação por isca deixa de existir — US1)
+
+  /brands/{id}:
+    get:
+      summary: Obter marca para edição (US2)
+      operationId: getBrand
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Marca
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BrandDetail" }
+        "404": { description: Não encontrada }
+    put:
+      summary: Atualizar marca (US2)
+      operationId: updateBrand
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BrandWrite" }
+      responses:
+        "204": { description: Atualizada }
+        "404": { description: Não encontrada }
+        "409": { description: Slug em conflito }
+
+  /brands:
+    get:
+      summary: Listar/buscar marcas por nome (US3 — autocomplete) e listagem (US2)
+      description: Já existente (CRUD genérico). Usado pelo BrandPicker com ?q=<nome>.
+      operationId: listBrands
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: "filtra por nome/slug" }
+      responses:
+        "200":
+          description: Página de marcas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/BrandListItem" }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      page: { type: integer }
+                      per_page: { type: integer }
+    # POST /brands (criar) já existe da feature 002.
+
+components:
+  schemas:
+    BrandListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        is_active: { type: boolean }
+
+    BrandWrite:
+      type: object
+      required: [name]
+      properties:
+        slug: { type: string, nullable: true }
+        name: { type: string }
+
+    BrandDetail:
+      allOf:
+        - $ref: "#/components/schemas/BrandWrite"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+
+    # ---- Delta na escrita de iscas (POST/PUT /lures) ----
+    # 1) "sizes" passa a "configurations" e cada item ganha hook_size/hook_count/hook_type.
+    # 2) cada cor: "photo_url" (uma) → "photo_urls" (lista).
+    # 3) remove "is_indexable" e os campos hook_* ao nível da isca.
+    ConfigurationInput:
+      type: object
+      required: [label, weight_g]
+      properties:
+        code: { type: string, nullable: true }
+        label: { type: string }
+        length_mm: { type: number, nullable: true }
+        weight_g: { type: number }
+        hook_size: { type: string, nullable: true }
+        hook_type: { type: string, nullable: true }
+        hook_count: { type: integer, nullable: true }
+        sort_order: { type: integer, default: 0 }
+
+    ColorInputDelta:
+      type: object
+      description: "Igual à 005, mas photo_url → photo_urls[] (lista de fotos por cor)."
+      properties:
+        name_pt: { type: string, nullable: true }
+        name_en: { type: string, nullable: true }
+        pattern: { type: string, nullable: true }
+        photo_urls:
+          type: array
+          items: { type: string, format: uri }
+        hex_codes:
+          type: array
+          items:
+            type: object
+            properties:
+              hex: { type: string, pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
+              label: { type: string, nullable: true }
+              sort_order: { type: integer, default: 0 }
+
+  # /media (upload) — inalterado no contrato; corrige-se o limite de payload no cliente (Next 1MB→5MB).

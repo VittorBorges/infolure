@@ -41,30 +41,30 @@ public class IndexingToggleTests(AuthenticatedApiFactory factory) : IClassFixtur
         }
     }
 
+    // Feature 006 (US1) — o controlo de indexação POR ISCA foi removido; só existe o global.
     [Fact]
-    public async Task Per_lure_indexable_controls_sitemap_membership()
+    public async Task Per_lure_indexable_endpoint_no_longer_exists()
     {
         var admin = _factory.AdminClient();
-        var anon = _factory.CreateClient();
-        await admin.PutAsJsonAsync("/v1/admin/settings/indexing", new { enabled = true });
+        var res = await admin.PutAsJsonAsync($"/v1/admin/lures/{Guid.NewGuid()}/indexable", new { is_indexable = false });
+        Assert.True(res.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.MethodNotAllowed,
+            $"esperado 404/405, veio {(int)res.StatusCode}");
+    }
 
-        const string slug = "t-seo-lure-1";
-        var created = await admin.PostAsJsonAsync("/v1/admin/lures",
-            new { slug, name = "SEO Lure", lure_type = "jig", status = "published", sizes = new[] { new { label = "STD", weight_g = 10 } } });
-        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
+    // Feature 006 (US1) — GET admin do estado global.
+    [Fact]
+    public async Task Admin_can_read_global_indexing_state()
+    {
+        var admin = _factory.AdminClient();
         try
         {
-            Assert.Contains(slug, Slugs(await anon.GetFromJsonAsync<JsonElement>("/v1/seo")));
-
-            await admin.PutAsJsonAsync($"/v1/admin/lures/{id}/indexable", new { is_indexable = false });
-            Assert.DoesNotContain(slug, Slugs(await anon.GetFromJsonAsync<JsonElement>("/v1/seo")));
+            await admin.PutAsJsonAsync("/v1/admin/settings/indexing", new { enabled = false });
+            var s = await admin.GetFromJsonAsync<JsonElement>("/v1/admin/settings/indexing");
+            Assert.False(s.GetProperty("enabled").GetBoolean());
         }
         finally
         {
-            using var scope = _factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await db.Lures.IgnoreQueryFilters().Where(l => l.Id == id).ExecuteDeleteAsync();
+            await admin.PutAsJsonAsync("/v1/admin/settings/indexing", new { enabled = true });
         }
     }
 }

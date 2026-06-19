@@ -37,9 +37,6 @@ function renderCell(column: string, value: unknown): React.ReactNode {
   if (column === 'deleted_at') {
     return value != null ? <Badge variant="destructive">eliminado</Badge> : <span className="text-muted-foreground">—</span>;
   }
-  if (column === 'is_indexable') {
-    return value === true ? <Badge variant="success">indexável</Badge> : <Badge variant="muted">não-indexável</Badge>;
-  }
   if (column === 'status') {
     const v = String(value ?? '');
     return v ? <Badge variant={STATUS_VARIANT[v] ?? 'secondary'}>{v}</Badge> : <span className="text-muted-foreground">—</span>;
@@ -88,13 +85,9 @@ export default async function AdminResourcePage({
     return `/admin/${resource}?${u.toString()}`;
   };
 
-  const editHref = (row: Record<string, unknown>) => {
-    const u = new URLSearchParams();
-    if (row.status != null) u.set('status', String(row.status));
-    if (row.name != null) u.set('name', String(row.name));
-    if (row.slug != null) u.set('slug', String(row.slug));
-    return `/admin/${resource}/${String(row.id)}?${u.toString()}`;
-  };
+  // Formulários de edição carregam por id (iscas e marcas). Sem query params legados.
+  const editHref = (row: Record<string, unknown>) => `/admin/${resource}/${String(row.id)}`;
+  const editable = resource === 'lures' || resource === 'brands';
 
   return (
     <div className="space-y-6">
@@ -103,9 +96,9 @@ export default async function AdminResourcePage({
           <h1 className="text-2xl font-semibold capitalize tracking-tight">{resource}</h1>
           <p className="text-sm text-muted-foreground">{meta.total} registos</p>
         </div>
-        {resource === 'lures' && (
+        {(resource === 'lures' || resource === 'brands') && (
           <Button asChild size="sm">
-            <Link href="/admin/lures/new">+ Nova isca</Link>
+            <Link href={`/admin/${resource}/new`}>{resource === 'lures' ? '+ Nova isca' : '+ Nova marca'}</Link>
           </Button>
         )}
       </header>
@@ -149,7 +142,7 @@ export default async function AdminResourcePage({
                     ))}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {resource === 'lures' && row.deleted_at == null && (
+                        {editable && row.deleted_at == null && (
                           <Button variant="outline" size="sm" asChild>
                             <Link href={editHref(row)}>Editar</Link>
                           </Button>
@@ -160,7 +153,6 @@ export default async function AdminResourcePage({
                           isActive={row.is_active === true}
                           deleted={row.deleted_at != null}
                           personal={personal}
-                          indexable={resource === 'lures' ? row.is_indexable === true : undefined}
                         />
                       </div>
                     </TableCell>

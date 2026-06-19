@@ -1,17 +1,15 @@
 <!-- SPECKIT START -->
-Active feature: **005 — Formulário de Registo e Edição de Iscas**.
+Active feature: **006 — Melhorias ao Formulário de Iscas**.
 Stack: backend **.NET 10 (ASP.NET Core)** + frontend **Next.js 16 (React/TS)**;
 PostgreSQL (EF Core), Typesense, Redis, Supabase Auth, Azure (West Europe).
-Feature 005 adds a backoffice admin form to register/edit lures with all properties. It evolves the
-model: a lure gains a **list of sizes** (label + length_mm + weight_g), each **color** gains an
-**open list of hex codes** (each hex optionally labeled with a base color), replacing the fixed
-`hex_primary`/`hex_secondary` pair, and each color gets an **optional photo** (Azure Blob upload).
-Backend extends the admin write endpoints (`POST`/`PUT /v1/admin/lures`) transactionally; the public
-search keeps reading a denormalized representative size. No data migration (catalog has no real
-colors/sizes yet).
-For technologies, project structure, shell commands, and other context, read the current plan:
-`specs/005-lure-registration-form/plan.md` (with `research.md`, `data-model.md`,
-`contracts/admin-lures-api.yaml`, `quickstart.md`). Features 001–004 remain the baseline. Governing
+Feature 006 builds on 005: (US1) remove per-lure SEO `is_indexable` → single **global** indexing
+toggle in the admin panel; (US2) **brand CRUD** in the backoffice; (US3) select a lure's brand via
+**name autocomplete** (no UUID); (US4) **rename** "tamanho da isca" → **"configuração da isca"**
+(`LureSize`→`LureConfiguration`, `lure_sizes`→`lure_configurations`) everywhere and move **hook**
+data (size/count/type) to each configuration; (US5) each color gets **multiple photos** and the
+**>1 MB upload bug** is fixed (Next.js server-actions body limit → 5 MB). Read the plan:
+`specs/006-lure-form-enhancements/plan.md` (with `research.md`, `data-model.md`,
+`contracts/admin-api-delta.yaml`, `quickstart.md`). Features 001–005 remain the baseline. Governing
 principles: `.specify/memory/constitution.md`.
 <!-- SPECKIT END -->
 

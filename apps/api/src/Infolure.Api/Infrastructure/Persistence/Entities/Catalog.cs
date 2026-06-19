@@ -65,9 +65,6 @@ public class Lure : ISoftDeletable
     public string? WaterType { get; set; }
     public decimal? DepthMinM { get; set; }
     public decimal? DepthMaxM { get; set; }
-    public string? HookSize { get; set; }
-    public string? HookType { get; set; }
-    public short? HookCount { get; set; }
     public string? Material { get; set; }
     public string Attributes { get; set; } = "{}"; // JSONB
     public decimal? Price6mMinEur { get; set; }
@@ -75,13 +72,13 @@ public class Lure : ISoftDeletable
     public decimal? Price6mAvgEur { get; set; }
     public DateTimeOffset? Price6mUpdatedAt { get; set; }
     public string Status { get; set; } = "draft"; // draft | published | archived (editorial)
-    public bool IsIndexable { get; set; } = true;  // Feature 002 — indexabilidade SEO por isca (US-03)
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+    // Feature 006: anzol movido para LureConfiguration; indexação SEO passou a flag global (sem IsIndexable por isca).
 
     public Brand? Brand { get; set; }
     public ICollection<LureTranslation> Translations { get; set; } = new List<LureTranslation>();
-    public ICollection<LureSize> Sizes { get; set; } = new List<LureSize>();   // Feature 005 — lista de tamanhos (fonte única de peso/comprimento)
+    public ICollection<LureConfiguration> Configurations { get; set; } = new List<LureConfiguration>();  // Feature 006 — antes "Sizes" (fonte única de peso/comprimento + anzol)
     public ICollection<LureColor> Colors { get; set; } = new List<LureColor>();
     public ICollection<LureImage> Images { get; set; } = new List<LureImage>();
     public ICollection<LureTargetSpecies> TargetSpecies { get; set; } = new List<LureTargetSpecies>();
@@ -105,16 +102,19 @@ public class LureTranslation : IAuditable
     public DateTimeOffset? DeletedAt { get; set; }
 }
 
-// Feature 005 — variante de tamanho da isca (rótulo do fabricante + comprimento + peso).
-// lure_sizes é a fonte única de peso/comprimento (os escalares de Lure foram removidos).
-public class LureSize : IAuditable
+// Feature 006 — "Configuração da isca" (antes "LureSize"/tamanho). Fonte única de peso/comprimento
+// e, agora, dos dados de anzol (cada configuração tem o seu anzol). Tabela lure_configurations.
+public class LureConfiguration : IAuditable
 {
     public Guid Id { get; set; }
     public Guid LureId { get; set; }
     public string? Code { get; set; }          // código curto/SKU opcional
     public string Label { get; set; } = null!;  // designação do fabricante, ex.: "100SP"
     public decimal? LengthMm { get; set; }      // comprimento (mm)
-    public decimal WeightG { get; set; }        // peso (g) — obrigatório por tamanho
+    public decimal WeightG { get; set; }        // peso (g) — obrigatório por configuração
+    public string? HookSize { get; set; }       // Feature 006 — anzol por configuração
+    public string? HookType { get; set; }
+    public short? HookCount { get; set; }
     public short SortOrder { get; set; }
     public Lure Lure { get; set; } = null!;
 

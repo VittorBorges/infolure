@@ -23,7 +23,7 @@ public class AdminCrudTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
 
         // create (published) → indexável/visível
         var created = await admin.PostAsJsonAsync("/v1/admin/lures",
-            new { slug, name = "T Crud Lure", lure_type = "jig", status = "published", sizes = new[] { new { label = "STD", weight_g = 10 } } });
+            new { slug, name = "T Crud Lure", lure_type = "jig", status = "published", configurations = new[] { new { label = "STD", weight_g = 10 } } });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

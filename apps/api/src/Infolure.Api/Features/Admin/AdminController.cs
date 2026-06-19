@@ -20,6 +20,7 @@ public class AdminController(
     AdminResourceService resources,
     DashboardService dashboard,
     LureWriteService lureWrite,
+    BrandService brands,
     FluentValidation.IValidator<LureWriteRequest> lureValidator,
     Infolure.Api.Features.Media.BlobUploadService blobUpload,
     Infolure.Api.Features.Seo.SeoSettingsService seo,
@@ -78,7 +79,7 @@ public class AdminController(
                 return Ok(await resources.ListAsync(lq, query, l => new
                 {
                     id = l.Id, slug = l.Slug, name = l.Translations.FirstOrDefault(t => t.Locale == "pt")!.Name,
-                    lure_type = l.LureType, status = l.Status, is_indexable = l.IsIndexable,
+                    lure_type = l.LureType, status = l.Status,
                     is_active = l.IsActive, source = l.Source, deleted_at = l.DeletedAt,
                 }, ct));
             case "brands":
@@ -213,6 +214,27 @@ public class AdminController(
         return Created($"/v1/admin/brands/{brand.Id}", new { id = brand.Id });
     }
 
+    // ---- Feature 006 (US2) — get/update de marca (CRUD) ----
+    [HttpGet("brands/{id:guid}")]
+    public async Task<IActionResult> GetBrand(Guid id, CancellationToken ct)
+    {
+        var dto = await brands.GetAsync(id, ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPut("brands/{id:guid}")]
+    public async Task<IActionResult> UpdateBrand(Guid id, [FromBody] BrandWriteRequest body, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(body.Name)) return UnprocessableEntity(new { error = "nome obrigatório" });
+        var outcome = await brands.UpdateAsync(id, body, ct);
+        return outcome switch
+        {
+            BrandService.Outcome.NotFound => NotFound(),
+            BrandService.Outcome.SlugConflict => Conflict(new { error = "slug em conflito", body.Slug }),
+            _ => NoContent(),
+        };
+    }
+
     [HttpPost("species")]
     public async Task<IActionResult> CreateSpecies([FromBody] CreateSpeciesRequest body, CancellationToken ct)
     {
@@ -304,25 +326,17 @@ public class AdminController(
         return NoContent();
     }
 
-    // ---- Controlo de indexação (US-03 / FR-014) ----
+    // ---- Indexação SEO GLOBAL (Feature 006/US1 — único controlo; sem opção por isca) ----
     public record IndexingRequest(bool Enabled);
+
+    [HttpGet("settings/indexing")]
+    public async Task<IActionResult> GetIndexing(CancellationToken ct)
+        => Ok(new { enabled = await seo.GetEnabledAsync(ct) });
 
     [HttpPut("settings/indexing")]
     public async Task<IActionResult> SetIndexing([FromBody] IndexingRequest body, CancellationToken ct)
     {
         await seo.SetEnabledAsync(body.Enabled, adminCtx.ActorUserId, ct);
-        return NoContent();
-    }
-
-    public record IndexableRequest(bool IsIndexable);
-
-    [HttpPut("lures/{id:guid}/indexable")]
-    public async Task<IActionResult> SetLureIndexable(Guid id, [FromBody] IndexableRequest body, CancellationToken ct)
-    {
-        var lure = await db.Lures.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == id, ct);
-        if (lure is null) return NotFound();
-        lure.IsIndexable = body.IsIndexable; // só afeta sitemap/meta SEO, não a busca Typesense
-        await db.SaveChangesAsync(ct);
         return NoContent();
     }
 

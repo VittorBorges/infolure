@@ -20,7 +20,7 @@ public class LureDetailService(AppDbContext db)
             .Where(l => l.BrandId == null || db.Brands.Any(b => b.Id == l.BrandId && b.IsActive))
             .Include(l => l.Brand).ThenInclude(b => b!.Translations)
             .Include(l => l.Translations)
-            .Include(l => l.Sizes)
+            .Include(l => l.Configurations)
             .Include(l => l.Colors)
             .Include(l => l.Images)
             .Include(l => l.TargetSpecies).ThenInclude(ts => ts.Species).ThenInclude(s => s.Translations)
@@ -45,10 +45,11 @@ public class LureDetailService(AppDbContext db)
         var brand = lure.Brand?.Translations.FirstOrDefault(t => t.Locale == "pt")?.Name;
         var primaryImage = lure.Images.FirstOrDefault(i => i.IsPrimary) ?? lure.Images.FirstOrDefault();
 
-        // Feature 005 — peso/comprimento derivados da lista de tamanhos (fonte única).
-        var orderedSizes = lure.Sizes.OrderBy(s => s.SortOrder).ToList();
-        decimal? weightG = orderedSizes.Count > 0 ? orderedSizes.Min(s => s.WeightG) : null;
-        decimal? lengthMm = orderedSizes.Where(s => s.LengthMm != null).Select(s => s.LengthMm).Min();
+        // Feature 006 — peso/comprimento/anzol derivados das configurações (fonte única).
+        var orderedConfigs = lure.Configurations.OrderBy(c => c.SortOrder).ToList();
+        var repConfig = orderedConfigs.FirstOrDefault();   // representativa (menor sort_order)
+        decimal? weightG = orderedConfigs.Count > 0 ? orderedConfigs.Min(c => c.WeightG) : null;
+        decimal? lengthMm = orderedConfigs.Where(c => c.LengthMm != null).Select(c => c.LengthMm).Min();
         var firstColor = lure.Colors.FirstOrDefault();
 
         var pricing = lure.RetailerPrices.Count == 0 && lure.Price6mAvgEur is null
@@ -82,12 +83,12 @@ public class LureDetailService(AppDbContext db)
             LengthMm: lengthMm,
             DepthMinM: lure.DepthMinM,
             DepthMaxM: lure.DepthMaxM,
-            HookSize: lure.HookSize,
-            HookType: lure.HookType,
-            HookCount: lure.HookCount,
+            HookSize: repConfig?.HookSize,
+            HookType: repConfig?.HookType,
+            HookCount: repConfig?.HookCount,
             Material: lure.Material,
-            Sizes: orderedSizes.Select(s =>
-                new LureSizeDto(s.Id, s.Code, s.Label, s.LengthMm, s.WeightG)).ToList(),
+            Configurations: orderedConfigs.Select(c =>
+                new LureConfigurationDto(c.Id, c.Code, c.Label, c.LengthMm, c.WeightG, c.HookSize, c.HookType, c.HookCount)).ToList(),
             Colors: lure.Colors.Select(c =>
                 new LureColorDto(
                     c.Id, c.NamePt,

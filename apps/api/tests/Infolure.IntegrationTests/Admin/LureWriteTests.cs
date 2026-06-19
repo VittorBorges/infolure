@@ -22,7 +22,7 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         {
             slug, name = "Minnow 90", description = "Isca de teste 005", lure_type = "jerkbait",
             status = "published",
-            sizes = new[]
+            configurations = new[]
             {
                 new { label = "90SP", length_mm = 90, weight_g = 9.5, sort_order = 0 },
                 new { label = "110SP", length_mm = 110, weight_g = 15.0, sort_order = 1 },
@@ -35,7 +35,7 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         var detail = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/lures/{id}");
         Assert.Equal("Minnow 90", detail.GetProperty("name").GetString());
         Assert.Equal("Isca de teste 005", detail.GetProperty("description").GetString());
-        Assert.Equal(2, detail.GetProperty("sizes").GetArrayLength());
+        Assert.Equal(2, detail.GetProperty("configurations").GetArrayLength());
     }
 
     // US2 — editar preservando campos não alterados; status omisso não despromove (FR-013/SC-005).
@@ -47,7 +47,7 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         var create = await admin.PostAsJsonAsync("/v1/admin/lures", new
         {
             slug, name = "Original", description = "desc", lure_type = "jig", status = "published",
-            sizes = new[] { new { label = "STD", weight_g = 10.0 } },
+            configurations = new[] { new { label = "STD", weight_g = 10.0 } },
         });
         var id = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
@@ -55,14 +55,14 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         var put = await admin.PutAsJsonAsync($"/v1/admin/lures/{id}", new
         {
             slug, name = "Original", description = "desc editada", lure_type = "jig",
-            sizes = new[] { new { label = "STD", weight_g = 10.0 } },
+            configurations = new[] { new { label = "STD", weight_g = 10.0 } },
         });
         Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
 
         var detail = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/lures/{id}");
         Assert.Equal("desc editada", detail.GetProperty("description").GetString());
         Assert.Equal("published", detail.GetProperty("status").GetString());
-        Assert.Single(detail.GetProperty("sizes").EnumerateArray());
+        Assert.Single(detail.GetProperty("configurations").EnumerateArray());
     }
 
     // US3 — cor com múltiplos hex (incl. duplicado permitido) persiste; foto opcional ausente é válida.
@@ -74,7 +74,7 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         var create = await admin.PostAsJsonAsync("/v1/admin/lures", new
         {
             slug, name = "Tiger", lure_type = "crankbait", status = "draft",
-            sizes = new[] { new { label = "STD", weight_g = 12.0 } },
+            configurations = new[] { new { label = "STD", weight_g = 12.0 } },
             colors = new[]
             {
                 new
@@ -109,7 +109,7 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
         var res = await admin.PostAsJsonAsync("/v1/admin/lures", new
         {
             slug, name = "Bad", lure_type = "jig",
-            sizes = new[] { new { label = "STD", weight_g = 10.0 } },
+            configurations = new[] { new { label = "STD", weight_g = 10.0 } },
             colors = new[] { new { name_pt = "X", hex_codes = new[] { new { hex = "#12xz" } } } },
         });
         Assert.Equal(HttpStatusCode.UnprocessableEntity, res.StatusCode);
@@ -133,8 +133,83 @@ public class LureWriteTests(AuthenticatedApiFactory factory) : IClassFixture<Aut
     {
         var admin = _factory.AdminClient();
         var slug = $"t-f005-dup-{Guid.NewGuid():N}";
-        var b = new { slug, name = "Dup", lure_type = "jig", sizes = new[] { new { label = "STD", weight_g = 10.0 } } };
+        var b = new { slug, name = "Dup", lure_type = "jig", configurations = new[] { new { label = "STD", weight_g = 10.0 } } };
         Assert.Equal(HttpStatusCode.Created, (await admin.PostAsJsonAsync("/v1/admin/lures", b)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/v1/admin/lures", b)).StatusCode);
+    }
+
+    // US4 (F006) — anzol por configuração, distinto entre configurações, persiste.
+    [Fact]
+    public async Task Hook_data_is_per_configuration()
+    {
+        var admin = _factory.AdminClient();
+        var slug = $"t-f006-hook-{Guid.NewGuid():N}";
+        var create = await admin.PostAsJsonAsync("/v1/admin/lures", new
+        {
+            slug, name = "Hooks", lure_type = "jig", status = "draft",
+            configurations = new[]
+            {
+                new { label = "S", weight_g = 8.0, hook_size = "#6", hook_type = "single", hook_count = 1, sort_order = 0 },
+                new { label = "L", weight_g = 16.0, hook_size = "#2", hook_type = "treble", hook_count = 2, sort_order = 1 },
+            },
+        });
+        var id = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var detail = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/lures/{id}");
+        var cfgs = detail.GetProperty("configurations").EnumerateArray().ToList();
+        Assert.Equal(2, cfgs.Count);
+        Assert.Equal("#6", cfgs[0].GetProperty("hook_size").GetString());
+        Assert.Equal("treble", cfgs[1].GetProperty("hook_type").GetString());
+        Assert.Equal(2, cfgs[1].GetProperty("hook_count").GetInt32());
+    }
+
+    // US3 (F006) — o detalhe inclui brand_name; criar com brand_id persiste.
+    [Fact]
+    public async Task Detail_includes_brand_name()
+    {
+        var admin = _factory.AdminClient();
+        var bslug = $"t-f006-brand-{Guid.NewGuid():N}";
+        var brandRes = await admin.PostAsJsonAsync("/v1/admin/brands", new { slug = bslug, name = "Rapala Teste" });
+        var brandId = (await brandRes.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var create = await admin.PostAsJsonAsync("/v1/admin/lures", new
+        {
+            slug = $"t-f006-lb-{Guid.NewGuid():N}", name = "Com Marca", lure_type = "jig", brand_id = brandId,
+            configurations = new[] { new { label = "STD", weight_g = 10.0 } },
+        });
+        var id = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var detail = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/lures/{id}");
+        Assert.Equal(brandId, detail.GetProperty("brand_id").GetGuid());
+        Assert.Equal("Rapala Teste", detail.GetProperty("brand_name").GetString());
+    }
+
+    // US5 (F006) — uma cor pode ter várias fotos (photo_urls[]), preservadas e ordenadas.
+    [Fact]
+    public async Task Color_persists_multiple_photos()
+    {
+        var admin = _factory.AdminClient();
+        var slug = $"t-f006-photos-{Guid.NewGuid():N}";
+        var create = await admin.PostAsJsonAsync("/v1/admin/lures", new
+        {
+            slug, name = "Fotos", lure_type = "jig", status = "draft",
+            configurations = new[] { new { label = "STD", weight_g = 10.0 } },
+            colors = new[]
+            {
+                new
+                {
+                    name_pt = "Tiger",
+                    photo_urls = new[] { "https://x/a.jpg", "https://x/b.jpg", "https://x/c.jpg" },
+                    hex_codes = new[] { new { hex = "#00ff00", label = "verde" } },
+                },
+            },
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var id = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var detail = await admin.GetFromJsonAsync<JsonElement>($"/v1/admin/lures/{id}");
+        var photos = detail.GetProperty("colors")[0].GetProperty("photo_urls").EnumerateArray().Select(p => p.GetString()).ToList();
+        Assert.Equal(3, photos.Count);
+        Assert.Equal("https://x/a.jpg", photos[0]);
     }
 }

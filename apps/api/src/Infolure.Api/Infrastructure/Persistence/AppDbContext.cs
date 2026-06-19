@@ -18,7 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
     public DbSet<SpeciesTranslation> SpeciesTranslations => Set<SpeciesTranslation>();
     public DbSet<Lure> Lures => Set<Lure>();
     public DbSet<LureTranslation> LureTranslations => Set<LureTranslation>();
-    public DbSet<LureSize> LureSizes => Set<LureSize>();
+    public DbSet<LureConfiguration> LureConfigurations => Set<LureConfiguration>();
     public DbSet<LureColor> LureColors => Set<LureColor>();
     public DbSet<LureImage> LureImages => Set<LureImage>();
     public DbSet<LureTargetSpecies> LureTargetSpecies => Set<LureTargetSpecies>();
@@ -73,7 +73,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
             e.HasIndex(x => x.Status);
             e.Property(x => x.Attributes).HasColumnType("jsonb").HasDefaultValueSql("'{}'");
             e.Property(x => x.Status).HasDefaultValue("draft");
-            e.Property(x => x.IsIndexable).HasDefaultValue(true);  // Feature 002 (US-03)
             e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
             e.ToTable(t =>
@@ -93,10 +92,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IAdminActionCo
                 .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        b.Entity<LureSize>(e =>
+        b.Entity<LureConfiguration>(e =>
         {
             e.HasIndex(x => x.LureId);
-            e.HasOne(x => x.Lure).WithMany(x => x.Sizes)
+            e.HasOne(x => x.Lure).WithMany(x => x.Configurations)
                 .HasForeignKey(x => x.LureId).OnDelete(DeleteBehavior.Cascade);
         });
 

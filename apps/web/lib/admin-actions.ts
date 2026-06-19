@@ -37,10 +37,14 @@ export async function eraseUserAction(id: string): Promise<AdminResult<void>> {
   return r;
 }
 
-// Feature 005 — payload completo de escrita de iscas (POST/PUT /v1/admin/lures).
-export interface LureSizeInput { code?: string; label: string; length_mm?: number | null; weight_g: number; sort_order?: number }
+// Feature 005/006 — payload completo de escrita de iscas (POST/PUT /v1/admin/lures).
+// 006: sizes→configurations (+anzol por configuração); cor: photo_url→photo_urls[]; sem hook/is_indexable na isca.
+export interface LureConfigurationInput {
+  code?: string; label: string; length_mm?: number | null; weight_g: number;
+  hook_size?: string | null; hook_type?: string | null; hook_count?: number | null; sort_order?: number;
+}
 export interface LureHexInput { hex: string; label?: string | null; sort_order?: number }
-export interface LureColorInput { name_pt?: string; name_en?: string | null; pattern?: string | null; photo_url?: string | null; hex_codes?: LureHexInput[] }
+export interface LureColorInput { name_pt?: string; name_en?: string | null; pattern?: string | null; photo_urls?: string[]; hex_codes?: LureHexInput[] }
 export interface LureWritePayload {
   slug: string;
   name: string;
@@ -49,14 +53,11 @@ export interface LureWritePayload {
   lure_type: string;
   water_type?: string | null;
   model_ref?: string | null;
-  hook_size?: string | null;
-  hook_type?: string | null;
-  hook_count?: number | null;
   material?: string | null;
   depth_min_m?: number | null;
   depth_max_m?: number | null;
   status?: string;
-  sizes: LureSizeInput[];
+  configurations: LureConfigurationInput[];
   colors?: LureColorInput[];
   target_species?: { species_id: string; confidence?: string | null }[];
 }
@@ -93,13 +94,43 @@ export async function uploadMediaAction(formData: FormData): Promise<AdminResult
   return adminFetch<{ url: string }>(`/v1/admin/media`, { method: 'POST', body });
 }
 
-// US-03 (T046): indexabilidade SEO por isca.
-export async function setIndexableAction(id: string, isIndexable: boolean): Promise<AdminResult<void>> {
-  const r = await adminFetch<void>(`/v1/admin/lures/${id}/indexable`, {
+// Feature 006 (US1) — indexação SEO GLOBAL (substitui o controlo por isca).
+export async function setGlobalIndexingAction(enabled: boolean): Promise<AdminResult<void>> {
+  const r = await adminFetch<void>(`/v1/admin/settings/indexing`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_indexable: isIndexable }),
+    body: JSON.stringify({ enabled }),
   });
-  revalidatePath('/admin/lures');
+  revalidatePath('/admin/settings');
   return r;
+}
+
+// Feature 006 (US2) — CRUD de marcas.
+export async function createBrandAction(body: { slug: string; name: string }): Promise<AdminResult<{ id: string }>> {
+  const r = await adminFetch<{ id: string }>(`/v1/admin/brands`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  revalidatePath('/admin/brands');
+  return r;
+}
+
+export async function updateBrandAction(id: string, body: { slug?: string; name: string }): Promise<AdminResult<void>> {
+  const r = await adminFetch<void>(`/v1/admin/brands/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  revalidatePath('/admin/brands');
+  revalidatePath(`/admin/brands/${id}`);
+  return r;
+}
+
+// Feature 006 (US3) — busca de marcas por nome (autocomplete do BrandPicker).
+export async function searchBrandsAction(q: string): Promise<AdminResult<{ id: string; name: string; slug: string }[]>> {
+  const r = await adminFetch<{ data: { id: string; name: string; slug: string }[] }>(
+    `/v1/admin/brands?q=${encodeURIComponent(q)}&per_page=10`,
+  );
+  return r.ok ? { ok: true, data: r.data.data } : r;
 }

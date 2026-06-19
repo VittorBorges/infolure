@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { setActiveAction, softDeleteAction, restoreAction, setIndexableAction, eraseUserAction } from '../../lib/admin-actions';
+import { setActiveAction, softDeleteAction, restoreAction, eraseUserAction } from '../../lib/admin-actions';
 import {
   Button,
   Dialog,
@@ -19,11 +19,9 @@ interface Props {
   isActive: boolean;
   deleted: boolean;
   personal: boolean;
-  /** Indexabilidade SEO (apenas iscas; undefined nos restantes recursos). */
-  indexable?: boolean;
 }
 
-export function RowActions({ resource, id, isActive, deleted, personal, indexable }: Props) {
+export function RowActions({ resource, id, isActive, deleted, personal }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -63,12 +61,6 @@ export function RowActions({ resource, id, isActive, deleted, personal, indexabl
       >
         {isActive ? 'Desativar' : 'Ativar'}
       </Button>
-
-      {indexable !== undefined && (
-        <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => setIndexableAction(id, !indexable))}>
-          {indexable ? 'Tornar não-indexável' : 'Tornar indexável'}
-        </Button>
-      )}
 
       <Button
         variant="destructive"

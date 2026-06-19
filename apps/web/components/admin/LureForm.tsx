@@ -9,8 +9,9 @@ import {
 
 import { createLureAction, updateLureAction, type LureWritePayload } from '../../lib/admin-actions';
 import { isValidHex, normalizeHex } from '../../lib/hex';
-import { SizeListField, emptySize, type SizeRow } from './SizeListField';
+import { ConfigurationListField, emptyConfiguration, type ConfigurationRow } from './ConfigurationListField';
 import { ColorListField, type ColorRow } from './ColorListField';
+import { BrandPicker } from './BrandPicker';
 
 const STATUSES = ['draft', 'published', 'archived'] as const;
 const WATER_TYPES = ['', 'freshwater', 'saltwater', 'both'] as const;
@@ -21,18 +22,19 @@ export interface LureInitial {
   name: string;
   description?: string | null;
   brand_id?: string | null;
+  brand_name?: string | null;
   lure_type: string;
   water_type?: string | null;
   model_ref?: string | null;
-  hook_size?: string | null;
-  hook_type?: string | null;
-  hook_count?: number | null;
   material?: string | null;
   depth_min_m?: number | null;
   depth_max_m?: number | null;
   status: string;
-  sizes: { code?: string | null; label: string; length_mm?: number | null; weight_g: number }[];
-  colors: { name_pt: string; pattern?: string | null; photo_url?: string | null; hex_codes: { hex: string; label?: string | null }[] }[];
+  configurations: {
+    code?: string | null; label: string; length_mm?: number | null; weight_g: number;
+    hook_size?: string | null; hook_type?: string | null; hook_count?: number | null;
+  }[];
+  colors: { name_pt: string; pattern?: string | null; photo_urls?: string[]; hex_codes: { hex: string; label?: string | null }[] }[];
 }
 
 interface Props {
@@ -56,9 +58,6 @@ export function LureForm({ mode, initial }: Props) {
     lure_type: initial?.lure_type ?? '',
     water_type: str(initial?.water_type),
     model_ref: str(initial?.model_ref),
-    hook_size: str(initial?.hook_size),
-    hook_type: str(initial?.hook_type),
-    hook_count: str(initial?.hook_count),
     material: str(initial?.material),
     depth_min_m: str(initial?.depth_min_m),
     depth_max_m: str(initial?.depth_max_m),
@@ -66,16 +65,19 @@ export function LureForm({ mode, initial }: Props) {
   });
   const set = (patch: Partial<typeof f>) => setF((prev) => ({ ...prev, ...patch }));
 
-  const [sizes, setSizes] = useState<SizeRow[]>(
-    initial && initial.sizes.length > 0
-      ? initial.sizes.map((s) => ({ code: str(s.code), label: s.label, length_mm: str(s.length_mm), weight_g: str(s.weight_g) }))
-      : [emptySize()],
+  const [configs, setConfigs] = useState<ConfigurationRow[]>(
+    initial && initial.configurations.length > 0
+      ? initial.configurations.map((c) => ({
+          code: str(c.code), label: c.label, length_mm: str(c.length_mm), weight_g: str(c.weight_g),
+          hook_size: str(c.hook_size), hook_type: str(c.hook_type), hook_count: str(c.hook_count),
+        }))
+      : [emptyConfiguration()],
   );
   const [colors, setColors] = useState<ColorRow[]>(
     (initial?.colors ?? []).map((c) => ({
       name_pt: c.name_pt ?? '',
       pattern: str(c.pattern),
-      photo_url: str(c.photo_url),
+      photos: c.photo_urls ?? [],
       hex: c.hex_codes.map((h) => ({ hex: h.hex, label: str(h.label) })),
     })),
   );
@@ -84,11 +86,11 @@ export function LureForm({ mode, initial }: Props) {
     if (!f.slug.trim()) return 'O slug é obrigatório.';
     if (!f.name.trim()) return 'O nome é obrigatório.';
     if (!f.lure_type.trim()) return 'O tipo de isca é obrigatório.';
-    if (sizes.length === 0) return 'Adicione pelo menos um tamanho.';
-    for (const s of sizes) {
-      if (!s.label.trim()) return 'Cada tamanho precisa de um rótulo.';
-      const w = Number(s.weight_g);
-      if (s.weight_g.trim() === '' || Number.isNaN(w) || w <= 0) return 'Cada tamanho precisa de um peso válido (> 0).';
+    if (configs.length === 0) return 'Adicione pelo menos uma configuração.';
+    for (const c of configs) {
+      if (!c.label.trim()) return 'Cada configuração precisa de um rótulo.';
+      const w = Number(c.weight_g);
+      if (c.weight_g.trim() === '' || Number.isNaN(w) || w <= 0) return 'Cada configuração precisa de um peso válido (> 0).';
     }
     for (const c of colors) {
       const hasName = c.name_pt.trim() !== '';
@@ -108,24 +110,24 @@ export function LureForm({ mode, initial }: Props) {
       lure_type: f.lure_type.trim(),
       water_type: f.water_type || null,
       model_ref: f.model_ref.trim() || null,
-      hook_size: f.hook_size.trim() || null,
-      hook_type: f.hook_type.trim() || null,
-      hook_count: f.hook_count.trim() === '' ? null : Number(f.hook_count),
       material: f.material.trim() || null,
       depth_min_m: numOrNull(f.depth_min_m),
       depth_max_m: numOrNull(f.depth_max_m),
       status: f.status,
-      sizes: sizes.map((s, i) => ({
-        code: s.code.trim() || undefined,
-        label: s.label.trim(),
-        length_mm: numOrNull(s.length_mm),
-        weight_g: Number(s.weight_g),
+      configurations: configs.map((c, i) => ({
+        code: c.code.trim() || undefined,
+        label: c.label.trim(),
+        length_mm: numOrNull(c.length_mm),
+        weight_g: Number(c.weight_g),
+        hook_size: c.hook_size.trim() || null,
+        hook_type: c.hook_type.trim() || null,
+        hook_count: c.hook_count.trim() === '' ? null : Number(c.hook_count),
         sort_order: i,
       })),
       colors: colors.map((c) => ({
         name_pt: c.name_pt.trim() || undefined,
         pattern: c.pattern.trim() || null,
-        photo_url: c.photo_url.trim() || null,
+        photo_urls: c.photos.map((p) => p.trim()).filter((p) => p !== ''),
         hex_codes: c.hex
           .filter((h) => h.hex.trim() !== '')
           .map((h, i) => ({ hex: normalizeHex(h.hex), label: h.label.trim() || null, sort_order: i })),
@@ -167,19 +169,20 @@ export function LureForm({ mode, initial }: Props) {
       <Card>
         <CardHeader>
           <CardTitle>Propriedades</CardTitle>
-          <CardDescription>Campos da isca. Os marcados com * são obrigatórios.</CardDescription>
+          <CardDescription>Campos da isca. Os marcados com * são obrigatórios. O anzol é por configuração.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <Text label="Slug *" value={f.slug} onChange={(v) => set({ slug: v })} />
           <Text label="Nome *" value={f.name} onChange={(v) => set({ name: v })} />
           <Text label="Tipo *" value={f.lure_type} onChange={(v) => set({ lure_type: v })} placeholder="jig, crankbait…" />
           <Select label="Tipo de água" value={f.water_type} onChange={(v) => set({ water_type: v })} options={WATER_TYPES} />
-          <Text label="Marca (UUID)" value={f.brand_id} onChange={(v) => set({ brand_id: v })} />
+          <BrandPicker
+            value={f.brand_id}
+            initialName={initial?.brand_name ?? undefined}
+            onChange={(brandId) => set({ brand_id: brandId })}
+          />
           <Text label="Model ref" value={f.model_ref} onChange={(v) => set({ model_ref: v })} />
           <Text label="Material" value={f.material} onChange={(v) => set({ material: v })} />
-          <Text label="Anzol — tamanho" value={f.hook_size} onChange={(v) => set({ hook_size: v })} />
-          <Text label="Anzol — tipo" value={f.hook_type} onChange={(v) => set({ hook_type: v })} />
-          <Text label="Anzol — nº" type="number" value={f.hook_count} onChange={(v) => set({ hook_count: v })} />
           <Text label="Prof. mín (m)" type="number" value={f.depth_min_m} onChange={(v) => set({ depth_min_m: v })} />
           <Text label="Prof. máx (m)" type="number" value={f.depth_max_m} onChange={(v) => set({ depth_max_m: v })} />
           <Select label="Estado editorial" value={f.status} onChange={(v) => set({ status: v })} options={STATUSES} />
@@ -198,7 +201,7 @@ export function LureForm({ mode, initial }: Props) {
 
       <Card>
         <CardContent className="pt-6">
-          <SizeListField value={sizes} onChange={setSizes} />
+          <ConfigurationListField value={configs} onChange={setConfigs} />
         </CardContent>
       </Card>
 
