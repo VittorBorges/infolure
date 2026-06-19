@@ -40,7 +40,7 @@ export async function eraseUserAction(id: string): Promise<AdminResult<void>> {
 // Feature 005/006 — payload completo de escrita de iscas (POST/PUT /v1/admin/lures).
 // 006: sizes→configurations (+anzol por configuração); cor: photo_url→photo_urls[]; sem hook/is_indexable na isca.
 export interface LureConfigurationInput {
-  code?: string; label: string; length_mm?: number | null; weight_g: number;
+  code?: string; label: string; length_mm?: number | null; weight_g?: number | null;
   hook_size?: string | null; hook_type?: string | null; hook_count?: number | null; sort_order?: number;
 }
 export interface LureHexInput { hex: string; label?: string | null; sort_order?: number }
@@ -131,6 +131,38 @@ export async function updateBrandAction(id: string, body: { slug?: string; name:
 export async function searchBrandsAction(q: string): Promise<AdminResult<{ id: string; name: string; slug: string }[]>> {
   const r = await adminFetch<{ data: { id: string; name: string; slug: string }[] }>(
     `/v1/admin/brands?q=${encodeURIComponent(q)}&per_page=10`,
+  );
+  return r.ok ? { ok: true, data: r.data.data } : r;
+}
+
+// Feature 006 — CRUD de espécies.
+export interface SpeciesWritePayload { slug?: string; common_name: string; water_type?: string | null; family?: string | null }
+
+export async function createSpeciesAction(body: SpeciesWritePayload): Promise<AdminResult<{ id: string }>> {
+  const r = await adminFetch<{ id: string }>(`/v1/admin/species`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  revalidatePath('/admin/species');
+  return r;
+}
+
+export async function updateSpeciesAction(id: string, body: SpeciesWritePayload): Promise<AdminResult<void>> {
+  const r = await adminFetch<void>(`/v1/admin/species/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  revalidatePath('/admin/species');
+  revalidatePath(`/admin/species/${id}`);
+  return r;
+}
+
+// Busca de espécies por nome (autocomplete do picker de espécies-alvo nas iscas).
+export async function searchSpeciesAction(q: string): Promise<AdminResult<{ id: string; name: string; slug: string }[]>> {
+  const r = await adminFetch<{ data: { id: string; name: string; slug: string }[] }>(
+    `/v1/admin/species?q=${encodeURIComponent(q)}&per_page=10`,
   );
   return r.ok ? { ok: true, data: r.data.data } : r;
 }

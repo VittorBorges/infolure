@@ -21,6 +21,7 @@ public class AdminController(
     DashboardService dashboard,
     LureWriteService lureWrite,
     BrandService brands,
+    SpeciesService species,
     FluentValidation.IValidator<LureWriteRequest> lureValidator,
     Infolure.Api.Features.Media.BlobUploadService blobUpload,
     Infolure.Api.Features.Seo.SeoSettingsService seo,
@@ -91,11 +92,13 @@ public class AdminController(
                     is_active = b.IsActive, source = b.Source, deleted_at = b.DeletedAt,
                 }, ct));
             case "species":
-                var sq = db.Species.AsQueryable();
-                if (!string.IsNullOrWhiteSpace(q)) sq = sq.Where(s => s.Slug.Contains(q));
+                var sq = db.Species.Include(s => s.Translations).AsQueryable();
+                if (!string.IsNullOrWhiteSpace(q)) sq = sq.Where(s => s.Slug.Contains(q) || s.Translations.Any(t => t.CommonName.Contains(q)));
                 return Ok(await resources.ListAsync(sq, query, s => new
                 {
-                    id = s.Id, slug = s.Slug, water_type = s.WaterType,
+                    id = s.Id, slug = s.Slug,
+                    name = s.Translations.FirstOrDefault(t => t.Locale == "pt")!.CommonName,
+                    water_type = s.WaterType, family = s.Family,
                     is_active = s.IsActive, source = s.Source, deleted_at = s.DeletedAt,
                 }, ct));
             case "users":
@@ -238,11 +241,32 @@ public class AdminController(
     [HttpPost("species")]
     public async Task<IActionResult> CreateSpecies([FromBody] CreateSpeciesRequest body, CancellationToken ct)
     {
-        var species = new Species { Id = Guid.NewGuid(), Slug = body.Slug, WaterType = body.WaterType };
-        species.Translations.Add(new SpeciesTranslation { SpeciesId = species.Id, Locale = "pt", CommonName = body.CommonName });
-        db.Species.Add(species);
+        var sp = new Species { Id = Guid.NewGuid(), Slug = body.Slug, WaterType = body.WaterType, Family = body.Family };
+        sp.Translations.Add(new SpeciesTranslation { SpeciesId = sp.Id, Locale = "pt", CommonName = body.CommonName });
+        db.Species.Add(sp);
         await db.SaveChangesAsync(ct);
-        return Created($"/v1/admin/species/{species.Id}", new { id = species.Id });
+        return Created($"/v1/admin/species/{sp.Id}", new { id = sp.Id });
+    }
+
+    // ---- Feature 006 — get/update de espécie (CRUD) ----
+    [HttpGet("species/{id:guid}")]
+    public async Task<IActionResult> GetSpecies(Guid id, CancellationToken ct)
+    {
+        var dto = await species.GetAsync(id, ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPut("species/{id:guid}")]
+    public async Task<IActionResult> UpdateSpecies(Guid id, [FromBody] SpeciesWriteRequest body, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(body.CommonName)) return UnprocessableEntity(new { error = "nome comum obrigatório" });
+        var outcome = await species.UpdateAsync(id, body, ct);
+        return outcome switch
+        {
+            SpeciesService.Outcome.NotFound => NotFound(),
+            SpeciesService.Outcome.SlugConflict => Conflict(new { error = "slug em conflito", body.Slug }),
+            _ => NoContent(),
+        };
     }
 
     // Validação FluentValidation → 422 ProblemDetails com mapa campo→mensagens.

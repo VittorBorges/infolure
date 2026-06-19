@@ -87,7 +87,8 @@ export default async function AdminResourcePage({
 
   // Formulários de edição carregam por id (iscas e marcas). Sem query params legados.
   const editHref = (row: Record<string, unknown>) => `/admin/${resource}/${String(row.id)}`;
-  const editable = resource === 'lures' || resource === 'brands';
+  const editable = resource === 'lures' || resource === 'brands' || resource === 'species';
+  const newLabel: Record<string, string> = { lures: '+ Nova isca', brands: '+ Nova marca', species: '+ Nova espécie' };
 
   return (
     <div className="space-y-6">
@@ -96,9 +97,9 @@ export default async function AdminResourcePage({
           <h1 className="text-2xl font-semibold capitalize tracking-tight">{resource}</h1>
           <p className="text-sm text-muted-foreground">{meta.total} registos</p>
         </div>
-        {(resource === 'lures' || resource === 'brands') && (
+        {editable && (
           <Button asChild size="sm">
-            <Link href={`/admin/${resource}/new`}>{resource === 'lures' ? '+ Nova isca' : '+ Nova marca'}</Link>
+            <Link href={`/admin/${resource}/new`}>{newLabel[resource] ?? '+ Novo'}</Link>
           </Button>
         )}
       </header>

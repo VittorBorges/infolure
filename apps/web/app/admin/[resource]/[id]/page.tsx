@@ -4,7 +4,10 @@ import { notFound } from 'next/navigation';
 import { ADMIN_RESOURCES, adminFetch, type AdminResource } from '../../../../lib/admin';
 import { LureForm, type LureInitial } from '../../../../components/admin/LureForm';
 import { BrandForm, type BrandInitial } from '../../../../components/admin/BrandForm';
+import { SpeciesForm, type SpeciesInitial } from '../../../../components/admin/SpeciesForm';
 import { Button, Card, CardContent } from '@infolure/design-system';
+
+const EDIT_LABEL: Record<string, string> = { lures: 'isca', brands: 'marca', species: 'espécie' };
 
 export const dynamic = 'force-dynamic';
 
@@ -22,19 +25,23 @@ export default async function AdminEditPage({
 
   let lure: LureInitial | null = null;
   let brand: BrandInitial | null = null;
+  let species: SpeciesInitial | null = null;
   if (resource === 'lures') {
     const r = await adminFetch<LureInitial>(`/v1/admin/lures/${id}`);
     if (!r.ok) { if (r.status === 404) notFound(); } else { lure = r.data; }
   } else if (resource === 'brands') {
     const r = await adminFetch<BrandInitial>(`/v1/admin/brands/${id}`);
     if (!r.ok) { if (r.status === 404) notFound(); } else { brand = r.data; }
+  } else if (resource === 'species') {
+    const r = await adminFetch<SpeciesInitial>(`/v1/admin/species/${id}`);
+    if (!r.ok) { if (r.status === 404) notFound(); } else { species = r.data; }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold capitalize tracking-tight">
-          Editar {resource === 'lures' ? 'isca' : resource === 'brands' ? 'marca' : resource}
+          Editar {EDIT_LABEL[resource] ?? resource}
         </h1>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/admin/${resource}`}>← Voltar</Link>
@@ -45,12 +52,14 @@ export default async function AdminEditPage({
         <LureForm mode="edit" initial={lure} />
       ) : resource === 'brands' && brand ? (
         <BrandForm mode="edit" initial={brand} />
+      ) : resource === 'species' && species ? (
+        <SpeciesForm mode="edit" initial={species} />
       ) : (
         <Card className="max-w-xl">
           <CardContent className="pt-6 text-sm text-muted-foreground">
-            {resource === 'lures' || resource === 'brands'
+            {resource === 'lures' || resource === 'brands' || resource === 'species'
               ? 'Não foi possível carregar o registo (sessão admin necessária).'
-              : 'A edição detalhada está disponível para iscas e marcas. Para os outros recursos, use as ações na listagem.'}
+              : 'A edição detalhada está disponível para iscas, marcas e espécies. Para os outros recursos, use as ações na listagem.'}
           </CardContent>
         </Card>
       )}

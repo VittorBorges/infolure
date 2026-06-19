@@ -94,6 +94,60 @@ paths:
                       per_page: { type: integer }
     # POST /brands (criar) já existe da feature 002.
 
+  /species/{id}:
+    get:
+      summary: Obter espécie para edição (CRUD de espécies)
+      operationId: getSpecies
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Espécie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SpeciesDetail" }
+        "404": { description: Não encontrada }
+    put:
+      summary: Atualizar espécie (CRUD de espécies)
+      operationId: updateSpecies
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpeciesWrite" }
+      responses:
+        "204": { description: Atualizada }
+        "404": { description: Não encontrada }
+        "409": { description: Slug em conflito }
+
+  /species:
+    get:
+      summary: Listar/buscar espécies por nome (autocomplete de espécies-alvo) e listagem
+      description: CRUD genérico. Usado pelo picker de espécies-alvo com ?q=<nome>; a list devolve common_name.
+      operationId: listSpecies
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: "filtra por nome comum/slug" }
+      responses:
+        "200":
+          description: Página de espécies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/SpeciesListItem" }
+                  meta:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      page: { type: integer }
+                      per_page: { type: integer }
+    # POST /species (criar) já existe da feature 002; agora aceita também "family".
+
 components:
   schemas:
     BrandListItem:
@@ -118,18 +172,44 @@ components:
           properties:
             id: { type: string, format: uuid }
 
+    SpeciesListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }            # common_name (pt)
+        water_type: { type: string, nullable: true }
+        family: { type: string, nullable: true }
+        is_active: { type: boolean }
+
+    SpeciesWrite:
+      type: object
+      required: [common_name]
+      properties:
+        slug: { type: string, nullable: true }
+        common_name: { type: string }
+        water_type: { type: string, nullable: true, enum: [freshwater, saltwater, both, null] }
+        family: { type: string, nullable: true }
+
+    SpeciesDetail:
+      allOf:
+        - $ref: "#/components/schemas/SpeciesWrite"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+
     # ---- Delta na escrita de iscas (POST/PUT /lures) ----
     # 1) "sizes" passa a "configurations" e cada item ganha hook_size/hook_count/hook_type.
     # 2) cada cor: "photo_url" (uma) → "photo_urls" (lista).
     # 3) remove "is_indexable" e os campos hook_* ao nível da isca.
     ConfigurationInput:
       type: object
-      required: [label, weight_g]
+      required: [label]
       properties:
         code: { type: string, nullable: true }
         label: { type: string }
         length_mm: { type: number, nullable: true }
-        weight_g: { type: number }
+        weight_g: { type: number, nullable: true }   # opcional; quando indicado, > 0
         hook_size: { type: string, nullable: true }
         hook_type: { type: string, nullable: true }
         hook_count: { type: integer, nullable: true }

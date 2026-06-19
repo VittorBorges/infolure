@@ -111,7 +111,7 @@ public class LureConfiguration : IAuditable
     public string? Code { get; set; }          // código curto/SKU opcional
     public string Label { get; set; } = null!;  // designação do fabricante, ex.: "100SP"
     public decimal? LengthMm { get; set; }      // comprimento (mm)
-    public decimal WeightG { get; set; }        // peso (g) — obrigatório por configuração
+    public decimal? WeightG { get; set; }       // peso (g) — opcional por configuração (Feature 006)
     public string? HookSize { get; set; }       // Feature 006 — anzol por configuração
     public string? HookType { get; set; }
     public short? HookCount { get; set; }

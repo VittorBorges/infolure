@@ -150,6 +150,32 @@ de comportamento da US4 (anzol por configuração) fica na sua fase.
 
 ---
 
+## Phase 7b: User Story 6 — CRUD de espécies + espécies-alvo por nome (Priority: P1)
+
+**Objetivo**: paridade com marcas (US2/US3) para espécies — CRUD no backoffice e seleção das
+espécies-alvo por nome (autocomplete multi-seleção, com confiança) no formulário da isca. Inclui o
+ajuste FR-007a (peso da configuração opcional).
+
+**F6**: a entidade `Species` (slug/family/water_type/translations) e os endpoints
+`POST`/`GET (list)`/lifecycle já existiam; esta fase acrescenta `GET`/`PUT /{id}` e a UI.
+
+### Tests for User Story 6 ⚠️
+
+- [x] T039 [P] [US6] Teste de integração `apps/api/tests/Infolure.IntegrationTests/Admin/SpeciesCrudTests.cs`: criar, obter, atualizar (nome/tipo de água), pesquisar por nome e (soft-)eliminar espécie; `PUT` inexistente → 404
+
+### Implementation for User Story 6
+
+- [x] T040 [US6] `apps/api/src/Infolure.Api/Features/Admin/SpeciesService.cs` (NOVO) com get/update; endpoints `GET`/`PUT /v1/admin/species/{id}` em `AdminController.cs` (create já existe, agora aceita `family`; 409 em slug em conflito); registar no `Program.cs`; DTOs `SpeciesWriteRequest`/`SpeciesDetailDto` em `AdminDtos.cs`
+- [x] T041 [US6] Backend: list de espécies devolve `name` (common_name) e pesquisa por nome em `AdminController.List`; `GetForEditAsync` devolve `target_species` **com nome** (`TargetSpeciesDetailDto`) em `LureWriteService.cs`
+- [x] T042 [P] [US6] Frontend: `apps/web/components/admin/SpeciesForm.tsx` (NOVO) e ligação das páginas `app/admin/[resource]/new|[id]|listagem` para `species` (botão "+ Nova espécie", "Editar")
+- [x] T043 [P] [US6] Frontend: server actions `createSpeciesAction`/`updateSpeciesAction`/`searchSpeciesAction` em `apps/web/lib/admin-actions.ts`
+- [x] T044 [US6] Frontend: `apps/web/components/admin/TargetSpeciesField.tsx` (NOVO) — autocomplete multi-seleção por nome com confiança; integrado em `LureForm.tsx` (payload `target_species` + pré-preenchimento na edição)
+- [x] T045 [US6] FR-007a: tornar o **peso** da configuração opcional (entidade/DTOs/validador + migration `weight_g` nullable; frontend sem `*` e validação só quando preenchido)
+
+**Checkpoint**: criar/editar/eliminar espécies no painel e associar espécies-alvo por nome numa isca.
+
+---
+
 ## Phase 8: Polish & Cross-Cutting
 
 - [x] T034 [P] Regenerar/ajustar tipos do frontend onde aplicável (`apps/web/lib/`) face ao delta de contrato
@@ -167,6 +193,7 @@ de comportamento da US4 (anzol por configuração) fica na sua fase.
 - **Setup (1)** → **Foundational (2, inclui rename + migration)** bloqueia todas as stories.
 - **US1, US2** (P1) independentes entre si após a Foundational. **US3** (P1) depende de US2 (precisa de marcas para escolher) e do `BrandPicker`.
 - **US4, US5** (P2) dependem da Foundational; independentes entre si.
+- **US6** (P1) após a Foundational; o picker de espécies-alvo reaproveita o padrão do `BrandPicker` (US3).
 - **Polish (8)** após as stories desejadas.
 
 ### User Story Dependencies
@@ -176,6 +203,7 @@ de comportamento da US4 (anzol por configuração) fica na sua fase.
 - US3: após Foundational + **US2** (marcas existem para selecionar).
 - US4: após Foundational (rename já aplicado).
 - US5: após Foundational.
+- US6: após Foundational. Espelha US2/US3 (CRUD + seleção por nome), mas para espécies.
 
 ### Parallel Opportunities
 
@@ -202,7 +230,8 @@ Task: "createBrandAction/updateBrandAction em apps/web/lib/admin-actions.ts"
 
 ### Incremental Delivery
 
-1. Foundational → 2. US1 → 3. US2 → 4. US3 (marca por nome) → 5. US4 (anzol/config) → 6. US5 (fotos).
+1. Foundational → 2. US1 → 3. US2 → 4. US3 (marca por nome) → 5. US4 (anzol/config) → 6. US5 (fotos)
+   → 7. US6 (CRUD de espécies + espécies-alvo por nome; peso opcional).
 
 ---
 

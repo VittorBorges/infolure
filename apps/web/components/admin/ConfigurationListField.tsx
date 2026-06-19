@@ -43,14 +43,14 @@ export function ConfigurationListField({ value, onChange }: Props) {
             <Field label="Comp. (mm)">
               <Input aria-label={`Comprimento ${i + 1}`} type="number" step="0.1" value={row.length_mm} onChange={(e) => update(i, { length_mm: e.target.value })} />
             </Field>
-            <Field label="Peso (g) *">
+            <Field label="Peso (g)">
               <Input aria-label={`Peso ${i + 1}`} type="number" step="0.1" value={row.weight_g} onChange={(e) => update(i, { weight_g: e.target.value })} />
             </Field>
             <Button type="button" variant="ghost" size="sm" onClick={() => remove(i)} disabled={value.length === 1} aria-label={`Remover configuração ${i + 1}`}>
               ✕
             </Button>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2">
             <Field label="Anzol — tamanho">
               <Input aria-label={`Anzol tamanho ${i + 1}`} placeholder="#4" value={row.hook_size} onChange={(e) => update(i, { hook_size: e.target.value })} />
             </Field>

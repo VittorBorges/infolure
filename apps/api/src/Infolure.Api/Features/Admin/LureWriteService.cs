@@ -78,7 +78,7 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
             .Include(x => x.Configurations)
             .Include(x => x.Colors)
             .Include(x => x.Images)
-            .Include(x => x.TargetSpecies)
+            .Include(x => x.TargetSpecies).ThenInclude(t => t.Species).ThenInclude(s => s.Translations)
             .Include(x => x.Brand).ThenInclude(b => b!.Translations)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -102,7 +102,10 @@ public class LureWriteService(AppDbContext db, LureIndexer indexer, ILogger<Lure
                 c.Id, c.NamePt, c.NameEn, c.Pattern,
                 photosByColor.GetValueOrDefault(c.Id) ?? [],
                 c.HexCodes.Select(h => new AdminLureHexCodeDto(h.Hex, h.Label, 0)).ToList())).ToList(),
-            l.TargetSpecies.Select(t => new TargetSpeciesInput(t.SpeciesId, t.Confidence)).ToList());
+            l.TargetSpecies.Select(t => new TargetSpeciesDetailDto(
+                t.SpeciesId,
+                t.Species.Translations.FirstOrDefault(tr => tr.Locale == "pt")?.CommonName ?? t.Species.Slug,
+                t.Confidence)).ToList());
     }
 
     private async Task<bool> SlugTakenAsync(string slug, Guid? exceptId, CancellationToken ct)

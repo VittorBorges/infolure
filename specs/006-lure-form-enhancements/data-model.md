@@ -21,6 +21,9 @@ ALTER TABLE lure_configurations ADD COLUMN hook_count SMALLINT;
 Colunas finais de `lure_configurations`: `id, lure_id, code, label, length_mm, weight_g, hook_size,
 hook_type, hook_count, sort_order, is_active, source, deleted_at`.
 
+> **Ajuste (FR-007a)**: `weight_g` passou a **nullable** (peso opcional por configuração) — migration
+> `ConfigurationWeightOptional` (`ALTER COLUMN weight_g DROP NOT NULL`).
+
 **Entidade**: `LureConfiguration` (antes `LureSize`) + `Lure.Configurations` (antes `Lure.Sizes`).
 
 ## Alterada: `lures` (remove anzol e indexação por isca)
@@ -46,6 +49,10 @@ ALTER TABLE lures DROP COLUMN is_indexable;
 - **Configuração de Indexação (global)**: `app_settings.seo_indexing_enabled` + `SeoSettingsService`
   (feature 002). Promovido ao painel; sem alteração de schema.
 - **Marca**: `brands` + `brand_translations` (nome `pt`). CRUD: create já existe; +get/update.
+- **Espécie**: `species` (slug, family, water_type) + `species_translations` (common_name `pt`).
+  CRUD: create já existe (agora aceita `family`); +get/update. Sem alteração de schema.
+- **Espécie-alvo**: `lure_target_species` (lure_id, species_id, confidence) — inalterada; passa a ser
+  editável no formulário da isca por nome (a confiança aceita `primary`/`secondary` ou nulo).
 - **Cor da Isca**: `lure_colors` (+ `hex_codes` JSONB da 005) — inalterada.
 
 ---
@@ -54,21 +61,24 @@ ALTER TABLE lures DROP COLUMN is_indexable;
 
 | Regra | Origem | Onde |
 |-------|--------|------|
-| ≥1 configuração; cada uma com `label` e `weight_g` > 0 | FR-007/013 | `LureWriteValidator` |
+| ≥1 configuração; cada uma com `label` | FR-007/013 | `LureWriteValidator` |
+| `weight_g` opcional; quando indicado, > 0 | FR-007a | `LureWriteValidator` (`.When(...)`) |
 | Anzol (`hook_*`) opcional por configuração | FR-007 | — |
 | `hex` válidos por cor (duplicados permitidos) | 005 | `LureWriteValidator` |
 | Foto ≤ 5 MB, tipo JPEG/PNG/WebP | FR-010/011 | `BlobUploadService` (validação testável) |
 | Marca selecionada existe (ou nenhuma) | FR-006 | seleção por id resolvido do picker |
 | Nome de marca obrigatório no CRUD | FR-003a | `BrandService`/validação |
+| Nome comum obrigatório no CRUD de espécies | FR-014 | `AdminController.UpdateSpecies`/`SpeciesService` |
 
 ---
 
 ## Relações (resumo)
 
 ```text
-Lure 1───N LureConfiguration (code, label, length_mm, weight_g, hook_size, hook_type, hook_count)
+Lure 1───N LureConfiguration (code, label, length_mm, weight_g?, hook_size, hook_type, hook_count)
 Lure 1───N LureColor (hex_codes JSONB)
 LureColor 1───N LureImage (color_id) — várias fotos por cor
 Lure N───1 Brand (opcional; selecionada por nome na UI)
+Lure N───N Species via LureTargetSpecies (confidence; selecionada por nome na UI)
 AppSetting.seo_indexing_enabled — flag global (substitui Lure.is_indexable)
 ```

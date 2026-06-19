@@ -133,6 +133,37 @@ acima do limite é recusada com mensagem clara.
 
 ---
 
+### User Story 6 - Gerir espécies (CRUD) e selecionar espécies-alvo por nome (Priority: P1)
+
+O administrador gere as espécies do catálogo através de um CRUD no backoffice: **criar**, **listar**,
+**editar** e **eliminar** espécies (nome comum, tipo de água e família). No formulário da isca, o
+editor associa as **espécies-alvo** procurando-as **pelo nome** (autocomplete, multi-seleção), com uma
+**confiança** opcional (primária/secundária) por espécie — sem nunca ver nem introduzir o UUID. Espelha
+o padrão já entregue para marcas (US2/US3).
+
+**Why this priority**: As espécies-alvo são essenciais para o catálogo e os filtros, mas só têm valor
+se existir forma de as gerir e de as associar a uma isca de forma realista (por nome, não por UUID). É
+o mesmo défice que as marcas tinham antes da US2/US3.
+
+**Independent Test**: No painel, criar uma espécie nova, editá-la, vê-la na listagem e eliminá-la; no
+formulário de uma isca, procurar a espécie pelo nome, associá-la como espécie-alvo, gravar e reabrir,
+confirmando que fica associada (com a confiança escolhida) — sem o editor ter visto o UUID.
+
+**Acceptance Scenarios**:
+
+1. **Given** o painel de espécies, **When** o admin cria uma espécie com nome comum (e opcionalmente
+   tipo de água/família), **Then** a espécie passa a existir e aparece na listagem.
+2. **Given** uma espécie existente, **When** o admin edita as propriedades e grava, **Then** as
+   alterações persistem.
+3. **Given** uma espécie existente, **When** o admin a elimina, **Then** deixa de estar disponível para
+   novas associações (segue a política de eliminação já usada no backoffice).
+4. **Given** o campo de espécies-alvo na isca, **When** o editor escreve parte de um nome, **Then**
+   surge uma lista de espécies correspondentes para escolher e adicionar.
+5. **Given** uma isca em edição com espécies-alvo já associadas, **When** o formulário abre, **Then** as
+   espécies aparecem pré-selecionadas pelo nome (não o UUID), com a respetiva confiança.
+
+---
+
 ### Edge Cases
 
 - Indexação global: o que acontece a iscas que estavam marcadas como não-indexáveis ao remover esse
@@ -145,6 +176,9 @@ acima do limite é recusada com mensagem clara.
   para por configuração? (Ver Assumptions.)
 - Fotos: o que acontece ao tentar carregar um ficheiro que não é imagem, ou acima do limite?
 - Fotos: ordenação e remoção numa lista com muitas fotos.
+- Espécies: como reage o picker quando a busca por nome não devolve resultados; impedir associar a
+  mesma espécie-alvo duas vezes à mesma isca.
+- Configuração: peso por configuração é agora **opcional** — quando indicado, deve ser > 0.
 
 ## Requirements *(mandatory)*
 
@@ -172,6 +206,8 @@ acima do limite é recusada com mensagem clara.
   designação anterior introduzida na feature 005.
 - **FR-007**: O sistema MUST associar as informações de anzol (**tamanho de anzol**, **quantidade de
   anzóis**, **tipo de anzol**) a **cada configuração** da isca, e não à isca como um todo.
+- **FR-007a**: O **peso** de cada configuração MUST ser **opcional**; quando indicado, MUST ser maior
+  que zero. (Ajuste à feature 006: deixa de ser obrigatório.)
 - **FR-008**: O formulário MUST remover os campos de anzol ao nível da isca, oferecendo-os por cada
   configuração da lista de configurações.
 - **FR-009**: Cada cor MUST suportar uma **lista de fotos** (zero ou mais), com possibilidade de
@@ -184,6 +220,15 @@ acima do limite é recusada com mensagem clara.
   teste automatizado que o comprove.
 - **FR-013**: As alterações MUST preservar o comportamento de registo/edição já existente (feature
   005) para os restantes campos.
+- **FR-014**: O backoffice MUST disponibilizar um CRUD de **espécies**: criar, listar, editar e
+  eliminar espécies (nome comum, tipo de água e família), seguindo as políticas de listagem/eliminação
+  já usadas no painel.
+- **FR-015**: As espécies geridas no CRUD MUST ser as que ficam disponíveis para associação como
+  **espécies-alvo** no formulário da isca.
+- **FR-016**: O formulário da isca MUST permitir associar **várias** espécies-alvo através de uma
+  **busca por nome** (autocomplete), com uma **confiança** opcional (primária/secundária) por espécie,
+  sem nunca expor nem exigir o UUID; ao editar, as espécies já associadas MUST aparecer pré-selecionadas
+  pelo nome.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -192,10 +237,15 @@ acima do limite é recusada com mensagem clara.
 - **Isca (Lure)**: perde a propriedade de indexação por isca e os campos de anzol ao nível da isca;
   passa a referenciar a marca apenas por associação (selecionada por nome na UI).
 - **Configuração da Isca (Lure Configuration)**: a variante antes chamada "Tamanho da Isca" (feature
-  005), agora **renomeada**. Além de código/rótulo/comprimento/peso, passa a ter **tamanho de anzol**,
-  **quantidade de anzóis** e **tipo de anzol**. (Nome distinto da "Configuração de Indexação" global.)
+  005), agora **renomeada**. Além de código/rótulo/comprimento e **peso (opcional)**, passa a ter
+  **tamanho de anzol**, **quantidade de anzóis** e **tipo de anzol**. (Nome distinto da "Configuração de
+  Indexação" global.)
 - **Marca (Brand)**: gerida por um CRUD no backoffice (criar/listar/editar/eliminar) e pesquisável por
   nome para seleção no formulário da isca.
+- **Espécie (Species)**: gerida por um CRUD no backoffice (criar/listar/editar/eliminar — nome comum,
+  tipo de água, família) e pesquisável por nome para associação como espécie-alvo no formulário da isca.
+- **Espécie-alvo (Target Species)**: associação entre isca e espécie, com uma confiança opcional
+  (primária/secundária); selecionada por nome na UI.
 - **Foto da Cor (Color Photo)**: cada cor tem uma lista ordenada de fotos (em vez de uma só).
 
 ## Success Criteria *(mandatory)*

@@ -60,7 +60,7 @@ public record LureHexCodeDto(string Hex, string? Label);
 public record LureColorDto(Guid Id, string Name, string? HexPrimary, string? HexSecondary, string? Pattern, IReadOnlyList<LureHexCodeDto> HexCodes);
 // Feature 006 — "configuração" (antes "tamanho"); inclui anzol por configuração. Os campos escalares
 // de peso/comprimento/anzol no LureDetailDto mantêm-se derivados da configuração representativa.
-public record LureConfigurationDto(Guid Id, string? Code, string Label, decimal? LengthMm, decimal WeightG, string? HookSize, string? HookType, short? HookCount);
+public record LureConfigurationDto(Guid Id, string? Code, string Label, decimal? LengthMm, decimal? WeightG, string? HookSize, string? HookType, short? HookCount);
 public record LureImageDto(string Url, Guid? ColorId, bool IsPrimary);
 public record TargetSpeciesDto(string Slug, string CommonName, string? Confidence);
 public record RetailerPriceDto(string Retailer, string? Url, decimal PriceEur, bool InStock);

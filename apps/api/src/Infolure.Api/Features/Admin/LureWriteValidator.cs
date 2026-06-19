@@ -23,12 +23,14 @@ public partial class LureWriteValidator : AbstractValidator<LureWriteRequest>
         RuleFor(x => x.Status).Must(s => s is null || Statuses.Contains(s))
             .WithMessage("status inválido");
 
-        // FR-007 — ≥1 configuração; cada uma com label e peso > 0 (anzol é opcional).
+        // FR-007 — ≥1 configuração; cada uma com label (peso e anzol são opcionais).
         RuleFor(x => x.Configurations).NotEmpty().WithMessage("é necessária pelo menos uma configuração");
         RuleForEach(x => x.Configurations).ChildRules(c =>
         {
             c.RuleFor(z => z.Label).NotEmpty().WithMessage("rótulo da configuração obrigatório");
-            c.RuleFor(z => z.WeightG).GreaterThan(0).WithMessage("peso da configuração deve ser > 0");
+            // Peso opcional; quando indicado, deve ser > 0.
+            c.RuleFor(z => z.WeightG).GreaterThan(0).When(z => z.WeightG.HasValue)
+                .WithMessage("peso da configuração deve ser > 0");
         });
 
         // FR-005..FR-009 — cores opcionais; cada cor não-vazia (nome OU ≥1 hex); hex válidos.

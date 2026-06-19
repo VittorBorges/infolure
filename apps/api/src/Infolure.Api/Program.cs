@@ -47,6 +47,7 @@ builder.Services.AddScoped<Infolure.Api.Features.Admin.AdminResourceService>(); 
 builder.Services.AddScoped<Infolure.Api.Features.Admin.DashboardService>();           // F002 US-02
 builder.Services.AddScoped<Infolure.Api.Features.Admin.LureWriteService>();           // F005 US-01/02
 builder.Services.AddScoped<Infolure.Api.Features.Admin.BrandService>();               // F006 US-02
+builder.Services.AddScoped<Infolure.Api.Features.Admin.SpeciesService>();             // F006 — CRUD espécies
 builder.Services.AddScoped<FluentValidation.IValidator<Infolure.Api.Features.Admin.LureWriteRequest>,
     Infolure.Api.Features.Admin.LureWriteValidator>();                                // F005
 builder.Services.AddScoped<Infolure.Api.Features.Media.BlobUploadService>();          // F005 US-03

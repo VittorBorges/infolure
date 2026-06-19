@@ -12,6 +12,7 @@ import { isValidHex, normalizeHex } from '../../lib/hex';
 import { ConfigurationListField, emptyConfiguration, type ConfigurationRow } from './ConfigurationListField';
 import { ColorListField, type ColorRow } from './ColorListField';
 import { BrandPicker } from './BrandPicker';
+import { TargetSpeciesField, type TargetSpeciesRow } from './TargetSpeciesField';
 
 const STATUSES = ['draft', 'published', 'archived'] as const;
 const WATER_TYPES = ['', 'freshwater', 'saltwater', 'both'] as const;
@@ -31,10 +32,11 @@ export interface LureInitial {
   depth_max_m?: number | null;
   status: string;
   configurations: {
-    code?: string | null; label: string; length_mm?: number | null; weight_g: number;
+    code?: string | null; label: string; length_mm?: number | null; weight_g?: number | null;
     hook_size?: string | null; hook_type?: string | null; hook_count?: number | null;
   }[];
   colors: { name_pt: string; pattern?: string | null; photo_urls?: string[]; hex_codes: { hex: string; label?: string | null }[] }[];
+  target_species?: { species_id: string; name: string; confidence?: string | null }[];
 }
 
 interface Props {
@@ -81,6 +83,11 @@ export function LureForm({ mode, initial }: Props) {
       hex: c.hex_codes.map((h) => ({ hex: h.hex, label: str(h.label) })),
     })),
   );
+  const [species, setSpecies] = useState<TargetSpeciesRow[]>(
+    (initial?.target_species ?? []).map((s) => ({
+      species_id: s.species_id, name: s.name, confidence: str(s.confidence),
+    })),
+  );
 
   function validate(): string | null {
     if (!f.slug.trim()) return 'O slug é obrigatório.';
@@ -89,8 +96,11 @@ export function LureForm({ mode, initial }: Props) {
     if (configs.length === 0) return 'Adicione pelo menos uma configuração.';
     for (const c of configs) {
       if (!c.label.trim()) return 'Cada configuração precisa de um rótulo.';
-      const w = Number(c.weight_g);
-      if (c.weight_g.trim() === '' || Number.isNaN(w) || w <= 0) return 'Cada configuração precisa de um peso válido (> 0).';
+      // Peso opcional; quando preenchido, deve ser um número > 0.
+      if (c.weight_g.trim() !== '') {
+        const w = Number(c.weight_g);
+        if (Number.isNaN(w) || w <= 0) return 'O peso da configuração, quando indicado, deve ser > 0.';
+      }
     }
     for (const c of colors) {
       const hasName = c.name_pt.trim() !== '';
@@ -118,7 +128,7 @@ export function LureForm({ mode, initial }: Props) {
         code: c.code.trim() || undefined,
         label: c.label.trim(),
         length_mm: numOrNull(c.length_mm),
-        weight_g: Number(c.weight_g),
+        weight_g: c.weight_g.trim() === '' ? null : Number(c.weight_g),
         hook_size: c.hook_size.trim() || null,
         hook_type: c.hook_type.trim() || null,
         hook_count: c.hook_count.trim() === '' ? null : Number(c.hook_count),
@@ -132,6 +142,7 @@ export function LureForm({ mode, initial }: Props) {
           .filter((h) => h.hex.trim() !== '')
           .map((h, i) => ({ hex: normalizeHex(h.hex), label: h.label.trim() || null, sort_order: i })),
       })),
+      target_species: species.map((s) => ({ species_id: s.species_id, confidence: s.confidence || null })),
     };
   }
 
@@ -208,6 +219,12 @@ export function LureForm({ mode, initial }: Props) {
       <Card>
         <CardContent className="pt-6">
           <ColorListField value={colors} onChange={setColors} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <TargetSpeciesField value={species} onChange={setSpecies} />
         </CardContent>
       </Card>
 
